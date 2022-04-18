@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
+using System.Diagnostics;
+
 
 
 namespace UnityStandardAssets.Vehicles.Car
@@ -17,6 +20,9 @@ namespace UnityStandardAssets.Vehicles.Car
         public GameObject[] friends; // use these to avoid collisions
 
         public GameObject my_goal_object;
+
+        //Terrain helpers
+        public Graph graph;
 
         private void Start()
         {
@@ -54,7 +60,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 old_wp = wp;
             }
 
-            
+            PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // graph is accessible through graph.path
         }
 
 
