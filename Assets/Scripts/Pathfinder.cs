@@ -362,44 +362,44 @@ public class PathFinder : MonoBehaviour
         return quadratic_bezier;
     }
 
-    public static List<Node> bezierPath(List<Node> path, int multiplier)
-    {
-        Debug.Log("WHILE path size: " + path.Count);
-        int final_size = path.Count * 2 * multiplier;
-        float[] coordinates;
-        float[] final_coord;
-        List<Node> bezier_path = new List<Node>();
-        int i = 0;
-        int k = 0;
-        while (k<path.Count)
-        {
-            //Debug.Log("WHILE i=" + i + " final_size = " + final_size);
-            int steps = 20;
-            steps *= 2;
-            steps = (final_size - i) > steps ? steps : final_size - i;
-            coordinates = new float[steps];
-            final_coord = new float[steps*multiplier];
-            for (int j = 0; j<steps; j+=2, i+=2, k++)
-            {   Debug.Log("WHILE i=" + i + " final_size = " + final_size);
-                Node current = path[k];
-                Debug.Log("WHILE i:" + i + " j:" + j + " position(" + current.x_pos + "," + current.z_pos + ")");
-                coordinates[j] = current.x_pos;
-                coordinates[j + 1] = current.z_pos;
-            }
+    //public static List<Node> bezierPath(List<Node> path, int multiplier)
+    //{
+    //    Debug.Log("WHILE path size: " + path.Count);
+    //    int final_size = path.Count * 2 * multiplier;
+    //    float[] coordinates;
+    //    float[] final_coord;
+    //    List<Node> bezier_path = new List<Node>();
+    //    int i = 0;
+    //    int k = 0;
+    //    while (k<path.Count)
+    //    {
+    //        //Debug.Log("WHILE i=" + i + " final_size = " + final_size);
+    //        int steps = 20;
+    //        steps *= 2;
+    //        steps = (final_size - i) > steps ? steps : final_size - i;
+    //        coordinates = new float[steps];
+    //        final_coord = new float[steps*multiplier];
+    //        for (int j = 0; j<steps; j+=2, i+=2, k++)
+    //        {   Debug.Log("WHILE i=" + i + " final_size = " + final_size);
+    //            Node current = path[k];
+    //            Debug.Log("WHILE i:" + i + " j:" + j + " position(" + current.x_pos + "," + current.z_pos + ")");
+    //            coordinates[j] = current.x_pos;
+    //            coordinates[j + 1] = current.z_pos;
+    //        }
 
-            Curves.BezierCurve bezier = new Curves.BezierCurve();
-            bezier.Bezier2D(coordinates, steps/2, final_coord);
+    //        Curves.BezierCurve bezier = new Curves.BezierCurve();
+    //        bezier.Bezier2D(coordinates, steps/2, final_coord);
 
-            for (int j = 0; j < steps; j += 2)
-            {
-                bezier_path.Add(new Node(1, 1, final_coord[j], final_coord[j + 1]));
-            }
+    //        for (int j = 0; j < steps; j += 2)
+    //        {
+    //            bezier_path.Add(new Node(1, 1, final_coord[j], final_coord[j + 1]));
+    //        }
             
-        }
+    //    }
         
-        Debug.Log("WHILE FINITO, len=" + bezier_path.Count);
-        return bezier_path;
-    }
+    //    Debug.Log("WHILE FINITO, len=" + bezier_path.Count);
+    //    return bezier_path;
+    //}
 
 
     public static List<Node> downsample_path2(List<Node> path)

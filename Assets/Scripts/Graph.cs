@@ -15,6 +15,7 @@ public class Graph{
     public Node start_node;
     public Node goal_node;
     public List<Node> path;
+    public List<Node> obstacleNodes = new List<Node>();
 
     public int[,] graphTraversabilityMatrix;
 
@@ -36,6 +37,17 @@ public class Graph{
         this.graphTraversabilityMatrix = new int[i_size, j_size];
     }
 
+    public void createObstacleList()
+    {
+        foreach (Node node in nodes)
+        {
+            if (!node.walkable)
+            {
+                obstacleNodes.Add(node);
+            }
+ 
+        }
+    }
     public void AddEdge(GraphEdge edge)
     {
         edges.Add(edge);
@@ -70,43 +82,82 @@ public class Graph{
         }
         Debug.Log(traversability_string);
     }
-
+    //public void upgradeGraph()
+    //{
+        
+    //    List<Node> usedNodes = new List<Node>();
+    //    for (int i = 0; i < nodes.GetLength(0); i++)
+    //    {
+    //        for (int j = 0; j < nodes.GetLength(1); j++)
+    //        {
+    //            Node node = nodes[i, j];
+    //            int rightNode = i + 1;
+    //            int bottomNode = j + 1;
+    //            if (usedNodes.Contains(node))
+    //            {
+    //                continue;
+    //            }
+    //            if(rightNode >= nodes.GetLength(0) && bottomNode >= nodes.GetLength(1))
+    //            {
+    //                continue;
+    //            }
+    //            if (nodes[i, j].walkable && nodes[rightNode, j].walkable && nodes[i, bottomNode].walkable && nodes[rightNode, bottomNode].walkable)
+    //            {
+    //                usedNodes.Add(node);
+    //                usedNodes.Add(nodes[rightNode, node.j]);
+    //                usedNodes.Add(nodes[node.i, bottomNode]);
+    //                usedNodes.Add(nodes[rightNode, bottomNode]);
+    //                nodes[i, j].x_pos = (node.x_pos + nodes[node.i + 1, node.j].x_pos) / 2;
+    //                nodes[i, j].z_pos = (node.z_pos + nodes[node.i, node.j + 1].z_pos) / 2;
+    //                nodes[i+1, j] = nodes[i, j];
+    //                nodes[i, j+1] = nodes[i, j];
+    //                nodes[i+1, j+1] = nodes[i, j];
+    //            }
+    //            else
+    //            {
+    //                usedNodes.Add(nodes[i, j]);
+    //            }                
+    //        }
+    //    }
+    //}
     public static Graph CreateGraph(TerrainInfo terrainInfo, int x_N, int z_N)
     {
+        // x_N, z_N are the number of boxes in the graph in the respective directions 
+        // x_dim, z_dim are the dimensions of one box in the graph
         if (terrainInfo == null)
         {
             //Debug.Log("terrain_manager is null");
             return null;
         }
 
-        if (x_N <= 0 || z_N <= 0)
-        {
-            //Debug.Log("x_N or z_N is less than or equal to 0");
-            return null;
-        }
 
         //Debug.Log("myFunction");
-        Graph graph = new Graph(x_N, z_N, terrainInfo.x_low, terrainInfo.x_high, terrainInfo.z_low, terrainInfo.z_high);
         float x_len = terrainInfo.x_high - terrainInfo.x_low;
         float z_len = terrainInfo.z_high - terrainInfo.z_low;
-        float x_unit = x_len / x_N;
-        float z_unit = z_len / z_N;
-        graph.start_node = new Node((int)(terrainInfo.start_pos[0] / x_unit), (int)(terrainInfo.start_pos[2] / z_unit), terrainInfo.start_pos[0], terrainInfo.start_pos[2]);
-        graph.goal_node = new Node((int)(terrainInfo.goal_pos[0] / x_unit), (int)(terrainInfo.goal_pos[2] / z_unit), terrainInfo.goal_pos[0], terrainInfo.goal_pos[2]);
+        x_N = x_N * 2;
+        z_N = z_N * 2;
+        float x_dim = x_len / x_N;
+        float z_dim = z_len / z_N;
+        Graph graph = new Graph(x_N, z_N, terrainInfo.x_low, terrainInfo.x_high, terrainInfo.z_low, terrainInfo.z_high);
+        //in this graph, each "box" is actually 4 quadrants 
+       
+        //graph.start_node = new Node((int)(terrainInfo.start_pos[0] / x_num), (int)(terrainInfo.start_pos[2] / z_num), terrainInfo.start_pos[0], terrainInfo.start_pos[2]);
+        //graph.goal_node = new Node((int)(terrainInfo.goal_pos[0] / x_num), (int)(terrainInfo.goal_pos[2] / z_num), terrainInfo.goal_pos[0], terrainInfo.goal_pos[2]);
 
         for (int i = 0; i < x_N; i++)
         {
+
             for (int j = 0; j < z_N; j++)
             {
-                float x_center = terrainInfo.x_low + x_unit * (i + 0.5f);
-                float z_center = terrainInfo.z_low + z_unit * (j + 0.5f);
+                float x_center = terrainInfo.x_low + x_dim * (i + 0.5f);
+                float z_center = terrainInfo.z_low + z_dim * (j + 0.5f);
                 Node node = new Node(i, j, x_center, z_center);
                 graph.nodes[i, j] = node;
 
 
                 int i_index = terrainInfo.get_i_index(x_center);
                 int j_index = terrainInfo.get_j_index(z_center);
-                Collider[] collision = Physics.OverlapSphere(new Vector3(x_center, 1, z_center), Math.Max(x_unit/2, z_unit/2));
+                Collider[] collision = Physics.OverlapSphere(new Vector3(x_center, 1, z_center), Math.Max(x_dim/2, z_dim/2));
                 bool walkable = true;
                 foreach (Collider c in collision)
                 {
@@ -123,10 +174,10 @@ public class Graph{
                     graph.graphTraversabilityMatrix[i, j] = 0; //0 means that the node is traversable
                     if (i == x_N || j == z_N)
                         continue;
-                    int next_i_index = terrainInfo.get_i_index(x_center + x_unit); //right
+                    int next_i_index = terrainInfo.get_i_index(x_center + x_dim); //right
                     if (terrainInfo.traversability[next_i_index, j_index] == 0)
                     {
-                        Node right_node = new Node(i + 1, j, x_center + x_unit, z_center);
+                        Node right_node = new Node(i + 1, j, x_center + x_dim, z_center);
                         GraphEdge edge = new GraphEdge(node, right_node);
                         GraphEdge edge_reverse = new GraphEdge(right_node, node);
                         graph.AddEdge(edge);
@@ -140,10 +191,10 @@ public class Graph{
                         graph.graphTraversabilityMatrix[i + 1, j] = 1;
                     }
 
-                    int next_j_index = terrainInfo.get_j_index(z_center + z_unit); //up
+                    int next_j_index = terrainInfo.get_j_index(z_center + z_dim); //up
                     if (terrainInfo.traversability[i_index, next_j_index] == 0)
                     {
-                        Node up_node = new Node(i, j + 1, x_center, z_center + z_unit);
+                        Node up_node = new Node(i, j + 1, x_center, z_center + z_dim);
                         GraphEdge edge = new GraphEdge(node, up_node);
                         GraphEdge edge_reverse = new GraphEdge(up_node, node);
                         graph.AddEdge(edge);
@@ -189,6 +240,7 @@ public class Graph{
         {
             node.neighbours = graph.getNeighbours(node);
         }
+        graph.createObstacleList();
         return graph;
     }
 
@@ -208,32 +260,39 @@ public class Graph{
     public List<Node> getNeighbours(Node node, bool print=false)
     {
         List<Node> toReturn = new List<Node>();
-        for(int i = -1; i<2; i++)
-        {
-            int current_i = node.i + i;
-            if (current_i < 0 || current_i >= nodes.GetLength(0))
-                continue;
-            for(int j = -1; j<2; j++)
+        
+            for (int i = -1; i < 2; i++)
             {
-                int current_j = node.j + j;
-                if (current_j < 0 || current_j >= nodes.GetLength(1) || i==0 && j==0)
+                int current_i = node.i + i;
+                if (current_i < 0 || current_i >= nodes.GetLength(0))
                     continue;
-                toReturn.Add(nodes[current_i, current_j]);
-                if (!nodes[current_i, current_j].walkable)
+                for (int j = -1; j < 2; j++)
                 {
-                    if (node.i == current_i)
+                    int current_j = node.j + j;
+                    if (current_j < 0 || current_j >= nodes.GetLength(1) || i == 0 && j == 0)
+                        continue;
+                    if (true) //i == 0 || j == 0
                     {
-                        node.wallClosenessCost += 12 * x_unit + 0.01f; //it means that the wall is above or behind, better go in the other direction
+                        toReturn.Add(nodes[current_i, current_j]);
                     }
-                    else if (node.j == current_j)
-                        node.wallClosenessCost += 12 * z_unit + 0.01f; //it means that the wall is next or before, better go in the other direction
-                    else
-                        node.wallClosenessCost += 2*(float)Math.Sqrt(x_unit * x_unit + z_unit * z_unit); //it means the wall is diagonally placed, better go in the other direction
-                    if (print)
-                        Debug.Log("Current node penalty: " + node.wallClosenessCost);
+
+                    if (!nodes[current_i, current_j].walkable)
+                    {
+                        if (node.i == current_i)
+                        {
+                            node.wallClosenessCost += 12 * x_unit + 0.01f; //it means that the wall is above or behind, better go in the other direction
+                        }
+                        else if (node.j == current_j)
+                            node.wallClosenessCost += 12 * z_unit + 0.01f; //it means that the wall is next or before, better go in the other direction
+                        else
+                            node.wallClosenessCost += 2 * (float)Math.Sqrt(x_unit * x_unit + z_unit * z_unit); //it means the wall is diagonally placed, better go in the other direction
+                        if (print)
+                            Debug.Log("Current node penalty: " + node.wallClosenessCost);
+                    }
                 }
             }
-        }
+        
         return toReturn;
     }
+    
 }
