@@ -222,11 +222,18 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 if (nrWalkable == 5) 
                 {
-                    cornerObstacles.Add(obstacle);
+                    Node possibleCorner1 = graph.nodes[obstacle.i+2, obstacle.j];
+                    Node possibleCorner2 = graph.nodes[obstacle.i - 2, obstacle.j];
+                    Node possibleCorner3 = graph.nodes[obstacle.i , obstacle.j + 2];
+                    Node possibleCorner4 = graph.nodes[obstacle.i , obstacle.j - 2];
+
+                    if (!(!possibleCorner1.walkable && !possibleCorner2.walkable && !possibleCorner3.walkable && !possibleCorner4.walkable))
+                        cornerObstacles.Add(obstacle);
                 }
             }
             //Create imaginary obstacles 
             foreach(Node corner in cornerObstacles){
+                
                 List<Node> cornerNeighbours;
                 cornerNeighbours = graph.getNeighbours(corner);
                 foreach (Node neighbour in cornerNeighbours){
@@ -235,14 +242,14 @@ namespace UnityStandardAssets.Vehicles.Car
                         int diff = neighbour.i - corner.i; // neighbour 7 and corner 8, diff = -1
                         if (!graph.nodes[corner.i - 2 * diff, corner.j].walkable)
                         {
-                            //if (!graph.nodes[corner.i + 3 * diff, corner.j].walkable)
-                            
-                            int newI = corner.i - diff; //corner 8 - (-1) = 9
-                            Node newObstacle = graph.nodes[newI, corner.j];
-                            newObstacle.walkable = false;
-                            newObstacle = graph.nodes[newI - diff, corner.j];
-                            newObstacle.walkable = false;
-                            
+                            if (graph.nodes[corner.i + 3 * diff, corner.j].walkable)
+                            {
+                                int newI = corner.i + diff; //corner 8 - (-1) = 9
+                                Node newObstacle = graph.nodes[newI, corner.j];
+                                newObstacle.walkable = false;
+                                newObstacle = graph.nodes[newI + diff, corner.j];
+                                newObstacle.walkable = false;
+                            }
                         }
                     }
                     else
@@ -250,14 +257,14 @@ namespace UnityStandardAssets.Vehicles.Car
                         int diff = neighbour.j - corner.j;
                         if (!graph.nodes[corner.i, corner.j - 2 * diff].walkable)
                         {
-                            //if (!graph.nodes[corner.i, corner.j + 3 * diff].walkable)
-                             
-                            int newJ = corner.j - diff;
-                            Node newObstacle = graph.nodes[corner.i, newJ];
-                            newObstacle.walkable = false;
-                            newObstacle = graph.nodes[corner.i, newJ - diff];
-                            newObstacle.walkable = false; 
-                            
+                            if (graph.nodes[corner.i, corner.j + 3 * diff].walkable)
+                            {
+                                int newJ = corner.j + diff;
+                                Node newObstacle = graph.nodes[corner.i, newJ];
+                                newObstacle.walkable = false;
+                                newObstacle = graph.nodes[corner.i, newJ + diff];
+                                newObstacle.walkable = false;
+                            }
                         }
                     }
                 }
