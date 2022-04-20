@@ -16,6 +16,7 @@ using System;
 - Wait until the intersection is empty before letting the next section drive. 
 - Make a function always drive on the right
 - Obstacle collision detection and avoidance (useful after the intersection)
+- Make fake obstacles so the cars don't crash into the line of cars waiting //this is done below
 */
 
 namespace UnityStandardAssets.Vehicles.Car
@@ -42,7 +43,11 @@ namespace UnityStandardAssets.Vehicles.Car
         //Graph and waypoint helpers
         public Graph graph;
         int nextWaypoint;
+        List<Node> stoppingCorners = new List<Node>();
+        List<Node> stopLines = new List<Node>();
 
+        //Status keepers
+        bool stopAndWait = false;
 
 
         private void Start()
@@ -83,7 +88,8 @@ namespace UnityStandardAssets.Vehicles.Car
             //    old_wp = wp;
             //}
             setImaginaryObstacles();
-            //PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+            stopNodes();
+            PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
         }
 
 
@@ -116,30 +122,62 @@ namespace UnityStandardAssets.Vehicles.Car
             // this is how you control the car
             //m_Car.Move(1f, 1f, 1f, 0f);
 
-
-            if (nextWaypoint < graph.path.Count)
+            if (!CarInFront())
             {
-                drive();
+                if (nextWaypoint < graph.path.Count)
+                {
+                    if (stopLines.Contains(graph.getNodeFromPoint(graph.path[nextWaypoint + 1].worldPosition)))
+                    {
+                        stopAndWait = true;
+
+                    }
+                    if (stopAndWait)
+                    {
+                        stop();
+                    }
+                    else
+                    {
+                        drive();
+                    }
+                }
             }
+            else
+            { stop(); }
+            
+        }
+        bool CarInFront()
+        {
+            int maxRange = 3;
+            RaycastHit hit_forward;
+            Vector3 forward = m_Car.transform.forward;
+            bool carInFront = Physics.Raycast(m_Car.transform.position, forward, out hit_forward, maxRange, 6);
+            return carInFront;
+            
 
         }
-
         void OnDrawGizmos()
         {
             if (graph != null)
             {
-                foreach (Node n in graph.nodes) // graph.path 
-                {
-                    Gizmos.color = (n.walkable) ? Color.blue : Color.red;
-                    if (graph.path != null && graph.path.Contains(n))
-                        Gizmos.color = Color.white;
-                    Gizmos.DrawCube(n.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
-                }
+                //foreach (Node n in graph.nodes) // graph.path 
+                //{
+                //    Gizmos.color = (n.walkable) ? Color.blue : Color.red;
+                //    if (graph.path != null && graph.path.Contains(n))
+                //        Gizmos.color = Color.white;
+                //    Gizmos.DrawCube(n.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+                //}
 
                 Node currentNode = graph.getNodeFromPoint(transform.position);
                 //Debug.Log("CAR INITIAL NODE: [" + currentNode.i + "," + currentNode.j + "]");
                 Gizmos.color = Color.cyan; // position of car
                 Gizmos.DrawCube(currentNode.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+
+                //foreach (Node n in stopLines)
+                //{
+                //    Gizmos.color = Color.black;
+                //    Gizmos.DrawCube(n.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+
+                //}
 
 
             }
@@ -154,6 +192,11 @@ namespace UnityStandardAssets.Vehicles.Car
             }
         }
 
+        void stop()
+        {
+                m_Car.Move(0f, 0f, -1, 0f);
+
+        }
 
         void drive()
         {
@@ -207,6 +250,21 @@ namespace UnityStandardAssets.Vehicles.Car
             }
         }
         
+        public void stopNodes() //stoping nodes are saved in stopLines
+        {
+            foreach (Node corner in stoppingCorners)
+            {
+                for (int k = 1; k < 3; k++)
+                {
+                    Node stopNode = graph.nodes[corner.i + k, corner.j];
+                    if (stopNode.walkable)
+                        stopLines.Add(stopNode);
+                    stopNode = graph.nodes[corner.i, corner.j + k];
+                    if (stopNode.walkable)
+                        stopLines.Add(stopNode);
+                }
+            }
+        }
 
         public void setImaginaryObstacles(){
             //Find corner obstacles 
@@ -222,13 +280,19 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
                 if (nrWalkable == 5) 
                 {
-                    Node possibleCorner1 = graph.nodes[obstacle.i+2, obstacle.j];
-                    Node possibleCorner2 = graph.nodes[obstacle.i - 2, obstacle.j];
-                    Node possibleCorner3 = graph.nodes[obstacle.i , obstacle.j + 2];
-                    Node possibleCorner4 = graph.nodes[obstacle.i , obstacle.j - 2];
+                    Node possibleCorner1 = graph.nodes[obstacle.i+3, obstacle.j];
+                    Node possibleCorner2 = graph.nodes[obstacle.i - 3, obstacle.j];
+                    Node possibleCorner3 = graph.nodes[obstacle.i , obstacle.j + 3];
+                    Node possibleCorner4 = graph.nodes[obstacle.i , obstacle.j - 3];
 
                     if (!(!possibleCorner1.walkable && !possibleCorner2.walkable && !possibleCorner3.walkable && !possibleCorner4.walkable))
+                    {
                         cornerObstacles.Add(obstacle);
+                    }
+                    else
+                    {
+                        stoppingCorners.Add(obstacle);
+                    }
                 }
             }
             //Create imaginary obstacles 
