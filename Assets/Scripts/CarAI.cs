@@ -43,13 +43,24 @@ namespace UnityStandardAssets.Vehicles.Car
         public GameObject my_goal_object;
 
         //Graph and waypoint helpers
-        public Graph graph;
         int nextWaypoint;
-        List<Node> stoppingCorners = new List<Node>();
-        List<Node> stopLines = new List<Node>();
 
         //Status keepers
         bool stopAndWait = false;
+        int layerMask;
+
+        Rigidbody body;
+
+        //move parameters
+        float steering;
+        float acceleration = 0;
+        float braking;
+        float handbrake;
+
+        CarIntersection intersection; 
+
+        Graph graph; 
+        public List<Node> stopLines;
 
 
         private void Start()
@@ -57,19 +68,22 @@ namespace UnityStandardAssets.Vehicles.Car
             // get the car controller
             m_Car = GetComponent<CarController>();
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-            graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
+            //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);  // moved to car intersection
 
-            // Plan your path here
-            // Replace the code below that makes a random path
-            // ...
+            intersection = GetComponent<CarIntersection>();
+            graph = intersection.GetGraph();
+            stopLines = intersection.GetStopLines();
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
             Vector3 goal_pos = terrain_manager.myInfo.goal_pos;
 
             friends = GameObject.FindGameObjectsWithTag("Car");
 
-            List<Vector3> my_path = new List<Vector3>();
+            //List<Vector3> my_path = new List<Vector3>();
             nextWaypoint = 1;
+            //layerMask = LayerMask.GetMask("Cars");
+            layerMask = 1 << 6;
+            body = GetComponent<Rigidbody>();
 
             //my_path.Add(start_pos);
 
@@ -90,8 +104,8 @@ namespace UnityStandardAssets.Vehicles.Car
             //    old_wp = wp;
             //}
             setCarObject();
-            setImaginaryObstacles();
-            stopNodes();
+            //setImaginaryObstacles();
+            //stopNodes();
             PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
         }
 
@@ -124,8 +138,9 @@ namespace UnityStandardAssets.Vehicles.Car
 
             // this is how you control the car
             //m_Car.Move(1f, 1f, 1f, 0f);
-
-            if (!CarInFront())
+            bool carInFront;
+            carInFront = CarInFront();
+            if (!carInFront)
             {
                 if (nextWaypoint < graph.path.Count)
                 {
@@ -158,26 +173,12 @@ namespace UnityStandardAssets.Vehicles.Car
                 if (car.transform.position == m_Car.transform.position)
                 {
                     currentGameObject = car;
+                    break;
                 }
             }
         }
 
-        bool CarInFront()
-        {
-            float maxRange = 25f;
-            RaycastHit hit_forward;
-            Vector3 forward = currentGameObject.transform.TransformDirection(Vector3.forward);
-            bool carInFront = Physics.Raycast(currentGameObject.transform.position, forward, out hit_forward, maxRange, 6);
-            Debug.DrawRay(currentGameObject.transform.position, forward, Color.red);
-//            print(carInFront);
-            if (carInFront)
-            {
-                Debug.Log("I see a car");
-            }
-            return carInFront;
-            
-
-        }
+       
         void OnDrawGizmos()
         {
             if (graph != null)
@@ -202,22 +203,35 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 //}
 
-
-            }
-
-            if (graph.path != null)
-            {
-                for (int i = 0; i < graph.path.Count - 1; i++)
+                if (graph.path != null)
                 {
-                    Gizmos.color = Color.black;
-                    Gizmos.DrawLine(graph.path[i].worldPosition, graph.path[i + 1].worldPosition);
+                    for (int i = 0; i < graph.path.Count - 1; i++)
+                    {
+                        Gizmos.color = Color.black;
+                        Gizmos.DrawLine(graph.path[i].worldPosition, graph.path[i + 1].worldPosition);
+                    }
                 }
+
             }
+
+            
         }
 
         void stop()
         {
-                m_Car.Move(0f, 0f, -1, 0f);
+                print(body.velocity.magnitude);
+                if (body.velocity.magnitude > 2){
+                    acceleration = 0;
+                    braking = -1;
+                    handbrake = 0; 
+                }
+                else{
+                    acceleration = 0;
+                    braking = 0;
+                    handbrake = 1;
+                }
+
+                m_Car.Move(0f, acceleration, braking, handbrake);
 
         }
 
@@ -225,7 +239,7 @@ namespace UnityStandardAssets.Vehicles.Car
         {
             RaycastHit hit;
             Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, 50f);
-            Debug.Log(hit.distance);
+            //Debug.Log(hit.distance);
 
             float k_p = 0.3f;
             float k_d = 0.2f;
@@ -234,7 +248,6 @@ namespace UnityStandardAssets.Vehicles.Car
             target_position[1] = 0.1f;
             Vector3 car_position = m_Car.transform.position;
             target_velocity = (target_position - oldTargetPosition) / Time.fixedDeltaTime;
-            //target_velocity = (target_position - target_position) / Time.fixedDeltaTime;
             Vector3 car_velocity = (car_position - oldCarPosition) / Time.fixedDeltaTime;
             oldTargetPosition = target_position;
             oldCarPosition = car_position;
@@ -242,20 +255,20 @@ namespace UnityStandardAssets.Vehicles.Car
             // a PD-controller to get desired velocity
             Vector3 position_error = target_position - transform.position;
             Vector3 velocity_error = target_velocity - car_velocity;
-            Vector3 desired_acceleration = k_p * position_error + k_d * velocity_error;
+            Vector3 correction_vector = k_p * position_error + k_d * velocity_error;
 
-            float steering = Vector3.Dot(desired_acceleration, transform.right);
-            float acceleration = Vector3.Dot(desired_acceleration, transform.forward);
+            float steering = Vector3.Dot(correction_vector, transform.right);
+            float forward_velocity = Vector3.Dot(correction_vector, transform.forward);
 
 
 
-            if (acceleration > 0)
+            if (forward_velocity > 0)
             {
                 m_Car.Move(steering, 1, 1, 0f);
             }
             else
             {
-                m_Car.Move(steering, -1, -1, 0f);
+                m_Car.Move(steering, 0, -1f, 0f); // acceleration is clamped to 0,1. We reverse using the footbrake. 
             }
 
 
@@ -273,90 +286,25 @@ namespace UnityStandardAssets.Vehicles.Car
             }
         }
         
-        public void stopNodes() //stoping nodes are saved in stopLines
+        
+
+        bool CarInFront()
         {
-            foreach (Node corner in stoppingCorners)
+            float maxRange = 15f;
+            bool carInFront = false;
+            RaycastHit hit_forward;
+            Vector3 forward = transform.TransformDirection(Vector3.forward);
+            if (Physics.Raycast(transform.position, forward, out hit_forward, maxRange, layerMask))
             {
-                for (int k = 1; k < 3; k++)
-                {
-                    Node stopNode = graph.nodes[corner.i + k, corner.j];
-                    if (stopNode.walkable)
-                        stopLines.Add(stopNode);
-                    stopNode = graph.nodes[corner.i, corner.j + k];
-                    if (stopNode.walkable)
-                        stopLines.Add(stopNode);
-                }
+                Debug.DrawRay(transform.position, forward * hit_forward.distance, Color.red);
+                carInFront = true;
+                Debug.Log("I see a car");
             }
+            //            print(carInFront);
+            
+            return carInFront;
         }
 
-        public void setImaginaryObstacles(){
-            //Find corner obstacles 
-            List<Node> cornerObstacles = new List<Node>();
-            foreach(Node obstacle in graph.obstacleNodes){
-                List<Node> neighbours;
-                neighbours = graph.getNeighbours(obstacle);
-                int nrWalkable = 0; 
-                foreach (Node neighbour in neighbours){
-                    if (neighbour.walkable){
-                        nrWalkable++;
-                    }
-                }
-                if (nrWalkable == 5) 
-                {
-                    Node possibleCorner1 = graph.nodes[obstacle.i+3, obstacle.j];
-                    Node possibleCorner2 = graph.nodes[obstacle.i - 3, obstacle.j];
-                    Node possibleCorner3 = graph.nodes[obstacle.i , obstacle.j + 3];
-                    Node possibleCorner4 = graph.nodes[obstacle.i , obstacle.j - 3];
-
-                    if (!(!possibleCorner1.walkable && !possibleCorner2.walkable && !possibleCorner3.walkable && !possibleCorner4.walkable))
-                    {
-                        cornerObstacles.Add(obstacle);
-                    }
-                    else
-                    {
-                        stoppingCorners.Add(obstacle);
-                    }
-                }
-            }
-            //Create imaginary obstacles 
-            foreach(Node corner in cornerObstacles){
-                
-                List<Node> cornerNeighbours;
-                cornerNeighbours = graph.getNeighbours(corner);
-                foreach (Node neighbour in cornerNeighbours){
-                    if (neighbour.i != corner.i)
-                    {
-                        int diff = neighbour.i - corner.i; // neighbour 7 and corner 8, diff = -1
-                        if (!graph.nodes[corner.i - 2 * diff, corner.j].walkable)
-                        {
-                            if (graph.nodes[corner.i + 3 * diff, corner.j].walkable)
-                            {
-                                int newI = corner.i + diff; //corner 8 - (-1) = 9
-                                Node newObstacle = graph.nodes[newI, corner.j];
-                                newObstacle.walkable = false;
-                                newObstacle = graph.nodes[newI + diff, corner.j];
-                                newObstacle.walkable = false;
-                            }
-                        }
-                    }
-                    else
-                    {
-                        int diff = neighbour.j - corner.j;
-                        if (!graph.nodes[corner.i, corner.j - 2 * diff].walkable)
-                        {
-                            if (graph.nodes[corner.i, corner.j + 3 * diff].walkable)
-                            {
-                                int newJ = corner.j + diff;
-                                Node newObstacle = graph.nodes[corner.i, newJ];
-                                newObstacle.walkable = false;
-                                newObstacle = graph.nodes[corner.i, newJ + diff];
-                                newObstacle.walkable = false;
-                            }
-                        }
-                    }
-                }
-            }
-        }
 
     }
 }

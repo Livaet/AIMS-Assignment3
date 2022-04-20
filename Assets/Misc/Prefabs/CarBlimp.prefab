@@ -6183,6 +6183,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 57f37a74d9bc64bfab28e1fee11436aa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  currentGameObject: {fileID: 0}
   terrain_manager_game_object: {fileID: 0}
   friends: []
   my_goal_object: {fileID: 0}
