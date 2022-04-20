@@ -30,6 +30,8 @@ namespace UnityStandardAssets.Vehicles.Car
         private Vector3 oldCarPosition;
         private Vector3 oldTargetPosition;
 
+        public GameObject currentGameObject;
+
         // Terrain variables
 
         public GameObject terrain_manager_game_object;
@@ -87,6 +89,7 @@ namespace UnityStandardAssets.Vehicles.Car
             //    //Debug.DrawLine(old_wp, wp, Color.red, 100f);
             //    old_wp = wp;
             //}
+            setCarObject();
             setImaginaryObstacles();
             stopNodes();
             PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
@@ -145,12 +148,32 @@ namespace UnityStandardAssets.Vehicles.Car
             { stop(); }
             
         }
+
+
+
+        public void setCarObject()
+        {
+            foreach (GameObject car in friends)
+            {
+                if (car.transform.position == m_Car.transform.position)
+                {
+                    currentGameObject = car;
+                }
+            }
+        }
+
         bool CarInFront()
         {
-            int maxRange = 3;
+            float maxRange = 25f;
             RaycastHit hit_forward;
-            Vector3 forward = m_Car.transform.forward;
-            bool carInFront = Physics.Raycast(m_Car.transform.position, forward, out hit_forward, maxRange, 6);
+            Vector3 forward = currentGameObject.transform.TransformDirection(Vector3.forward);
+            bool carInFront = Physics.Raycast(currentGameObject.transform.position, forward, out hit_forward, maxRange, 6);
+            Debug.DrawRay(currentGameObject.transform.position, forward, Color.red);
+//            print(carInFront);
+            if (carInFront)
+            {
+                Debug.Log("I see a car");
+            }
             return carInFront;
             
 
