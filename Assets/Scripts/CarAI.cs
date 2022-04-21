@@ -7,10 +7,10 @@ using System;
 
 /* TODO
 - Move the cars to a line within a rectangular box and let them wait 
-    - find the nodes for stopping
-    - tell the cars where to stop
-    - stop function
-    - Try to park each car behind the previous car 
+    - find the nodes for stopping #done
+    - tell the cars where to stop #done
+    - stop function // It still backs up 
+    - Try to park each car behind the previous car aka fix the raycasting
     - identify when a car is in front of you
 - Let one section drive at a time in a formation 
 - Wait until the intersection is empty before letting the next section drive. 
@@ -92,7 +92,11 @@ namespace UnityStandardAssets.Vehicles.Car
             setCarObject();
             setImaginaryObstacles();
             stopNodes();
-            PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+            for (int i = 0; i < 11; i++)
+            {
+                if (currentGameObject == friends[i])
+                    PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+            }
         }
 
 
@@ -124,28 +128,31 @@ namespace UnityStandardAssets.Vehicles.Car
 
             // this is how you control the car
             //m_Car.Move(1f, 1f, 1f, 0f);
+            //if (currentGameObject == friends[0])
+            //{
 
-            if (!CarInFront())
-            {
-                if (nextWaypoint < graph.path.Count)
+                if (!CarInFront())
                 {
-                    if (stopLines.Contains(graph.getNodeFromPoint(graph.path[nextWaypoint + 1].worldPosition)))
+                    if (nextWaypoint < graph.path.Count)
                     {
-                        stopAndWait = true;
+                        if (stopLines.Contains(graph.getNodeFromPoint(graph.path[nextWaypoint + 1].worldPosition)))
+                        {
+                            stopAndWait = true;
 
-                    }
-                    if (stopAndWait)
-                    {
-                        stop();
-                    }
-                    else
-                    {
-                        drive();
+                        }
+                        if (stopAndWait)
+                        {
+                            stop();
+                        }
+                        else
+                        {
+                            drive();
+                        }
                     }
                 }
-            }
-            else
-            { stop(); }
+                else
+                { stop(); }
+            //}
             
         }
 
@@ -217,7 +224,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
         void stop()
         {
-                m_Car.Move(0f, 0f, -1, 0f);
+                m_Car.Move(0f, 0f, -1f, 1f);
 
         }
 
