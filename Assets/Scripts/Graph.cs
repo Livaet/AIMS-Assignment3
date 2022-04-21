@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
-public class Graph{
+public class Graph
+{
     public int i_size;
     public int j_size;
     public float x_low;
@@ -17,10 +18,15 @@ public class Graph{
     public List<Node> path;
     public List<Node> obstacleNodes = new List<Node>();
 
+    TerrainManager tM;
+    public GameObject terrain_manager_game_object;
+
+
     public int[,] graphTraversabilityMatrix;
 
     public HashSet<GraphEdge> edges;
     public Node[,] nodes;
+
 
     public Graph(int i_size, int j_size, float x_low, float x_high, float z_low, float z_high)
     {
@@ -35,6 +41,8 @@ public class Graph{
         this.edges = new HashSet<GraphEdge>();
         this.nodes = new Node[i_size, j_size];
         this.graphTraversabilityMatrix = new int[i_size, j_size];
+        this.tM = terrain_manager_game_object.GetComponent<TerrainManager>();
+
     }
 
     public void createObstacleList()
@@ -120,22 +128,24 @@ public class Graph{
     //        }
     //    }
     //}
-    public static Graph CreateGraph(TerrainInfo terrainInfo, int x_N, int z_N)
+    public Graph CreateGraph() //TerrainInfo terrainInfo, int x_N, int z_N
     {
+
+
         // x_N, z_N are the number of boxes in the graph in the respective directions 
         // x_dim, z_dim are the dimensions of one box in the graph
-        if (terrainInfo == null)
-        {
-            //Debug.Log("terrain_manager is null");
-            return null;
-        }
+        //if (terrainInfo == null)
+        //{
+        //Debug.Log("terrain_manager is null");
+        //    return null;
+        //}
 
-
+        TerrainInfo terrainInfo = tM.myInfo;
+        int x_N = tM.myInfo.x_N * 2;
+        int z_N = tM.myInfo.z_N * 2;
         //Debug.Log("myFunction");
         float x_len = terrainInfo.x_high - terrainInfo.x_low;
         float z_len = terrainInfo.z_high - terrainInfo.z_low;
-        x_N = x_N * 2;
-        z_N = z_N * 2;
         float x_dim = x_len / x_N;
         float z_dim = z_len / z_N;
         Graph graph = new Graph(x_N, z_N, terrainInfo.x_low, terrainInfo.x_high, terrainInfo.z_low, terrainInfo.z_high);

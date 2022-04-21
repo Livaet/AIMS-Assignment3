@@ -7,29 +7,35 @@ using System;
 public class CarIntersection: MonoBehaviour
 {
     public Graph graph;
-    TerrainManager terrain_manager;
-    public GameObject terrain_manager_game_object;
+    //TerrainManager terrain_manager;
+    //public GameObject terrain_manager_game_object;
 
     List<Node> stoppingCorners = new List<Node>();
-    public List<Node> stopLines = new List<Node>();
+    private List<Node> stopLines = new List<Node>();
 
 
-    void Start()
+    //public Graph Graph
+    //{
+    //    get;      
+    //}
+    //public List<Node> StopLines
+    //{
+    //    get;
+    //}
+
+    public void Awake()
     {
-        terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
-        graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
+        //terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
+        //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
         
+        graph = graph.CreateGraph();
+
         setImaginaryObstacles();
         stopNodes();
     }
-
-    public Graph GetGraph(){
-        return graph; 
-    }
-    public List<Node> GetStopLines(){
-        return stopLines;
-    }
-    public void setImaginaryObstacles()
+    public Graph getGraph() { return graph; }
+    public List<Node> getStopLines() { return stopLines;  }
+    private void setImaginaryObstacles()
     {
             //Find corner obstacles 
             List<Node> cornerObstacles = new List<Node>();
@@ -98,7 +104,7 @@ public class CarIntersection: MonoBehaviour
                 }
             }
         }
-    public void stopNodes() //stoping nodes are saved in stopLines
+    private void stopNodes() //stoping nodes are saved in stopLines
     {
         foreach (Node corner in stoppingCorners)
         {

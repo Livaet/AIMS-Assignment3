@@ -57,7 +57,7 @@ namespace UnityStandardAssets.Vehicles.Car
         float braking;
         float handbrake;
 
-        CarIntersection intersection; 
+        private CarIntersection intersection; 
 
         Graph graph; 
         public List<Node> stopLines;
@@ -70,9 +70,9 @@ namespace UnityStandardAssets.Vehicles.Car
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
             //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);  // moved to car intersection
 
-            intersection = GetComponent<CarIntersection>();
-            graph = intersection.GetGraph();
-            stopLines = intersection.GetStopLines();
+            intersection = GetComponent<CarIntersection>(); //Maybe not get compnent 
+            graph = intersection.getGraph();
+            stopLines = intersection.getStopLines();
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
             Vector3 goal_pos = terrain_manager.myInfo.goal_pos;
