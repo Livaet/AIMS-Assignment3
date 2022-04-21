@@ -72,7 +72,9 @@ namespace UnityStandardAssets.Vehicles.Car
 
             intersection = GetComponent<CarIntersection>(); //Maybe not get compnent 
             graph = intersection.getGraph();
+            print("Here " + graph);
             stopLines = intersection.getStopLines();
+            print("Weee" + intersection);
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
             Vector3 goal_pos = terrain_manager.myInfo.goal_pos;

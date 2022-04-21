@@ -23,7 +23,7 @@ public class CarIntersection: MonoBehaviour
     //    get;
     //}
 
-    public void Awake()
+    public void Start()
     {
         //terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
         //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
