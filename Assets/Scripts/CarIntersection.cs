@@ -29,6 +29,7 @@ public class CarIntersection: MonoBehaviour
         //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
         
         graph = graph.CreateGraph();
+        print("Graph in graph " + graph);
 
         setImaginaryObstacles();
         stopNodes();
