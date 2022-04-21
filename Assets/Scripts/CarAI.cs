@@ -62,19 +62,21 @@ namespace UnityStandardAssets.Vehicles.Car
         Graph graph; 
         public List<Node> stopLines;
 
+        private List<Node> path; 
 
-        private void Start()
+
+        void Start()
         {
             // get the car controller
             m_Car = GetComponent<CarController>();
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
             //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);  // moved to car intersection
-
-            intersection = GetComponent<CarIntersection>(); //Maybe not get compnent 
+            GameObject intersectionObject = GameObject.FindGameObjectsWithTag("Intersection")[0];
+            intersection = intersectionObject.GetComponent<CarIntersection>(); //Maybe not get component 
             graph = intersection.getGraph();
-            print("Graph " + graph);
+            print("z high " + graph.z_high);
+            print("z low " + graph.z_low);
             stopLines = intersection.getStopLines();
-            print("Intersection" + intersection);
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
             Vector3 goal_pos = terrain_manager.myInfo.goal_pos;
@@ -108,7 +110,7 @@ namespace UnityStandardAssets.Vehicles.Car
             setCarObject();
             //setImaginaryObstacles();
             //stopNodes();
-            PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+            path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
         }
 
 
@@ -144,9 +146,9 @@ namespace UnityStandardAssets.Vehicles.Car
             carInFront = CarInFront();
             if (!carInFront)
             {
-                if (nextWaypoint < graph.path.Count)
+                if (nextWaypoint < path.Count)
                 {
-                    if (stopLines.Contains(graph.getNodeFromPoint(graph.path[nextWaypoint + 1].worldPosition)))
+                    if (stopLines.Contains(graph.getNodeFromPoint(path[nextWaypoint + 1].worldPosition)))
                     {
                         stopAndWait = true;
 
@@ -205,12 +207,12 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 //}
 
-                if (graph.path != null)
+                if (path != null)
                 {
-                    for (int i = 0; i < graph.path.Count - 1; i++)
+                    for (int i = 0; i < path.Count - 1; i++)
                     {
                         Gizmos.color = Color.black;
-                        Gizmos.DrawLine(graph.path[i].worldPosition, graph.path[i + 1].worldPosition);
+                        Gizmos.DrawLine(path[i].worldPosition, path[i + 1].worldPosition);
                     }
                 }
 
@@ -246,7 +248,7 @@ namespace UnityStandardAssets.Vehicles.Car
             float k_p = 0.3f;
             float k_d = 0.2f;
             // keep track of target position and velocity
-            Vector3 target_position = graph.path[nextWaypoint].worldPosition;
+            Vector3 target_position = path[nextWaypoint].worldPosition;
             target_position[1] = 0.1f;
             Vector3 car_position = m_Car.transform.position;
             target_velocity = (target_position - oldTargetPosition) / Time.fixedDeltaTime;

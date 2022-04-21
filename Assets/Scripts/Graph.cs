@@ -18,16 +18,14 @@ public class Graph
     public List<Node> path;
     public List<Node> obstacleNodes = new List<Node>();
 
-    TerrainManager tM;
-    public GameObject terrain_manager_game_object;
-
 
     public int[,] graphTraversabilityMatrix;
 
     public HashSet<GraphEdge> edges;
     public Node[,] nodes;
 
-
+    public Graph(){
+    }
     public Graph(int i_size, int j_size, float x_low, float x_high, float z_low, float z_high)
     {
         this.i_size = i_size;
@@ -41,7 +39,7 @@ public class Graph
         this.edges = new HashSet<GraphEdge>();
         this.nodes = new Node[i_size, j_size];
         this.graphTraversabilityMatrix = new int[i_size, j_size];
-        this.tM = terrain_manager_game_object.GetComponent<TerrainManager>();
+        
 
     }
 
@@ -139,15 +137,20 @@ public class Graph
         //Debug.Log("terrain_manager is null");
         //    return null;
         //}
-
-        TerrainInfo terrainInfo = tM.myInfo;
-        int x_N = tM.myInfo.x_N * 2;
-        int z_N = tM.myInfo.z_N * 2;
+        Debug.Log("tM" + TerrainManager.instance);
+        TerrainInfo terrainInfo = TerrainManager.instance.myInfo;
+        Debug.Log("terrain Info: " + terrainInfo);
+        int x_N = terrainInfo.x_N * 2;
+        int z_N = terrainInfo.z_N * 2;
         //Debug.Log("myFunction");
         float x_len = terrainInfo.x_high - terrainInfo.x_low;
         float z_len = terrainInfo.z_high - terrainInfo.z_low;
         float x_dim = x_len / x_N;
         float z_dim = z_len / z_N;
+        
+        Debug.Log("x_N: " + x_N);
+        Debug.Log("z_N: " + z_N);
+
         Graph graph = new Graph(x_N, z_N, terrainInfo.x_low, terrainInfo.x_high, terrainInfo.z_low, terrainInfo.z_high);
         //in this graph, each "box" is actually 4 quadrants 
        
@@ -256,8 +259,12 @@ public class Graph
 
     public Node getNodeFromPoint(Vector3 position)
     {
-        //Debug.Log(position.x);
-        //Debug.Log(position.z);
+        Debug.Log("X: " + position.x);
+        Debug.Log(x_low);
+        Debug.Log(x_unit);
+        Debug.Log("Z: " + position.z);
+        Debug.Log(z_low);
+        Debug.Log(z_unit);
 
         int i = (int)((position.x - x_low) / x_unit);
         int j = (int)((position.z - z_low)/ z_unit);

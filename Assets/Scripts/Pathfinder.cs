@@ -7,7 +7,7 @@ public class PathFinder : MonoBehaviour
 {
     public static float[,] headings = new float[,] { { 135f, 90f, 45f }, { 180f, 0f, 0f }, { 225f, 270f, 315f } };
 
-    public static void findPath(Graph graph, Vector3 start_position, Vector3 goal_position, float start_heading, bool drone = false)
+    public static List<Node> findPath(Graph graph, Vector3 start_position, Vector3 goal_position, float start_heading, bool drone = false)
     {
         Node start_node = graph.getNodeFromPoint(start_position);
         start_node.heading = start_heading;
@@ -19,6 +19,7 @@ public class PathFinder : MonoBehaviour
         HashSet<Node> closed_set = new HashSet<Node>();
         open_set.Add(start_node);
         bool k = true;
+        List<Node> path = new List<Node>();
 
         while (open_set.Count > 0)
         {
@@ -40,7 +41,8 @@ public class PathFinder : MonoBehaviour
             closed_set.Add(current);
             if (current == goal_node)
             {
-                List<Node> path = new List<Node>();
+                path = new List<Node>();
+                print("goal node");
                 Node previous_node = current;
 
                 while (previous_node != start_node)
@@ -119,7 +121,8 @@ public class PathFinder : MonoBehaviour
                 }
                 path.Add(previous_node);
                 path.Reverse();
-                graph.path = path;
+                //graph.path = path;
+                 
                 /*foreach(Node n in graph.path)
                 {
                     //Debug.Log("Path, nodo (" + previous_node.i + "," + previous_node.j + ")");
@@ -215,6 +218,7 @@ public class PathFinder : MonoBehaviour
 
             }
         }
+        return path;
 
     }
 

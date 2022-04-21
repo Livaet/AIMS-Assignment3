@@ -438,7 +438,7 @@ GameObject:
   - component: {fileID: 1010271822}
   m_Layer: 0
   m_Name: CarIntersection
-  m_TagString: Untagged
+  m_TagString: Intersection
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -455,6 +455,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 102298b88f89d4a61929802198c3c40f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  terrain_manager_game_object: {fileID: 1358011048}
 --- !u!4 &1010271823
 Transform:
   m_ObjectHideFlags: 0

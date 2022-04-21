@@ -15,6 +15,7 @@ public class TerrainManager : MonoBehaviour
 
     public GameObject flag;
 
+    public static TerrainManager instance; 
 
     // Use this for initialization
     void Start()
@@ -25,7 +26,13 @@ public class TerrainManager : MonoBehaviour
     // Use this for initialization
     void Awake()
     {
-
+        if (instance){
+            Destroy(this);
+        }
+        else
+        {
+            instance = this; 
+        }
         var jsonTextFile = Resources.Load<TextAsset>(terrain_filename);
 
         // set to false for hard coding new terrain using TerrainInfo2 below

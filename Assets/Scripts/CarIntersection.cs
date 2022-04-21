@@ -13,7 +13,7 @@ public class CarIntersection: MonoBehaviour
     List<Node> stoppingCorners = new List<Node>();
     private List<Node> stopLines = new List<Node>();
 
-
+    public GameObject terrain_manager_game_object;
     //public Graph Graph
     //{
     //    get;      
@@ -23,18 +23,20 @@ public class CarIntersection: MonoBehaviour
     //    get;
     //}
 
-    public void Start()
+    void Start()
     {
         //terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
         //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
-        
+        graph = new Graph();
         graph = graph.CreateGraph();
-        print("Graph in graph " + graph);
 
         setImaginaryObstacles();
         stopNodes();
     }
-    public Graph getGraph() { return graph; }
+    public Graph getGraph() 
+    { 
+        return graph; 
+        }
     public List<Node> getStopLines() { return stopLines;  }
     private void setImaginaryObstacles()
     {
