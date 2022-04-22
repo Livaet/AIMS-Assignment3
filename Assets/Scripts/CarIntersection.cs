@@ -27,16 +27,23 @@ public class CarIntersection: MonoBehaviour
     {
         //terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
         //graph = Graph.CreateGraph(terrain_manager.myInfo, terrain_manager.myInfo.x_N, terrain_manager.myInfo.z_N);
-        graph = new Graph();
-        graph = graph.CreateGraph();
+        
+        if (graph == null)
+        {
+            Debug.Log("graph is null");
 
-        setImaginaryObstacles();
-        stopNodes();
+            graph = new Graph();
+            graph = graph.CreateGraph();
+
+            setImaginaryObstacles();
+            stopNodes();
+        }
     }
     public Graph getGraph() 
     { 
         return graph; 
-        }
+
+    }
     public List<Node> getStopLines() { return stopLines;  }
     private void setImaginaryObstacles()
     {

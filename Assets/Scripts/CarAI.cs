@@ -52,18 +52,21 @@ namespace UnityStandardAssets.Vehicles.Car
         Rigidbody body;
 
         //move parameters
-        float steering;
-        float acceleration = 0;
-        float braking;
-        float handbrake;
+        //float steering;
+        //float acceleration = 0;
+        //float braking;
+        //float handbrake;
 
         private CarIntersection intersection; 
 
-        Graph graph; 
+        private Graph graph; 
         public List<Node> stopLines;
 
-        private List<Node> path; 
+        private List<Node> path;
 
+        public bool carInFront;
+
+        TerrainInfo terrainInfo;
 
         void Start()
         {
@@ -74,8 +77,8 @@ namespace UnityStandardAssets.Vehicles.Car
             GameObject intersectionObject = GameObject.FindGameObjectsWithTag("Intersection")[0];
             intersection = intersectionObject.GetComponent<CarIntersection>(); //Maybe not get component 
             graph = intersection.getGraph();
-            print("z high " + graph.z_high);
-            print("z low " + graph.z_low);
+            //print("z high " + graph.z_high);
+            //print("z low " + graph.z_low);
             stopLines = intersection.getStopLines();
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
@@ -83,34 +86,25 @@ namespace UnityStandardAssets.Vehicles.Car
 
             friends = GameObject.FindGameObjectsWithTag("Car");
 
-            //List<Vector3> my_path = new List<Vector3>();
             nextWaypoint = 1;
             //layerMask = LayerMask.GetMask("Cars");
             layerMask = 1 << 6;
             body = GetComponent<Rigidbody>();
+            terrainInfo = TerrainManager.instance.myInfo;
 
-            //my_path.Add(start_pos);
-
-            //for (int i = 0; i < 3; i++)
-            //{
-            //    Vector3 waypoint = start_pos + new Vector3(UnityEngine.Random.Range(-50.0f, 50.0f), 0, UnityEngine.Random.Range(-30.0f, 30.0f));
-            //    my_path.Add(waypoint);
-            //}
-            //my_path.Add(goal_pos);
-
-
-            //// Plot your path to see if it makes sense
-            //// Note that path can only be seen in "Scene" window, not "Game" window
-            //Vector3 old_wp = start_pos;
-            //foreach (var wp in my_path)
-            //{
-            //    //Debug.DrawLine(old_wp, wp, Color.red, 100f);
-            //    old_wp = wp;
-            //}
             setCarObject();
             //setImaginaryObstacles();
             //stopNodes();
-            path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360); // path is accessible through graph.path
+
+            //for (int i = 5; i < 6; i++)
+            //{
+            //    if (currentGameObject == friends[i])
+            //        path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            //}
+            path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+
+            path = pathAdjustRightWall(path);
+
         }
 
 
@@ -142,8 +136,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             // this is how you control the car
             //m_Car.Move(1f, 1f, 1f, 0f);
-            bool carInFront;
-            carInFront = CarInFront();
+            CarInFront();
             if (!carInFront)
             {
                 if (nextWaypoint < path.Count)
@@ -197,7 +190,10 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 Node currentNode = graph.getNodeFromPoint(transform.position);
                 //Debug.Log("CAR INITIAL NODE: [" + currentNode.i + "," + currentNode.j + "]");
-                Gizmos.color = Color.cyan; // position of car
+                
+                
+                
+                Gizmos.color = (carInFront) ? Color.red : Color.cyan; // position of car
                 Gizmos.DrawCube(currentNode.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
 
                 //foreach (Node n in stopLines)
@@ -223,20 +219,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
         void stop()
         {
-                print(body.velocity.magnitude);
-                if (body.velocity.magnitude > 2){
-                    acceleration = 0;
-                    braking = -1;
-                    handbrake = 0; 
-                }
-                else{
-                    acceleration = 0;
-                    braking = 0;
-                    handbrake = 1;
-                }
-
-                m_Car.Move(0f, acceleration, braking, handbrake);
-
+                m_Car.Move(0f, 0f, -1f, 1f);
         }
 
         void drive()
@@ -244,7 +227,10 @@ namespace UnityStandardAssets.Vehicles.Car
             RaycastHit hit;
             Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, 50f);
             //Debug.Log(hit.distance);
-
+            //Quaternion rotation = Quaternion.Euler(0, 90, 0);
+            //Debug.DrawLine()
+            Node node = graph.getNodeFromPoint(transform.position);
+            Debug.DrawLine(transform.position, graph.nodes[node.i + 2, node.j].worldPosition, Color.blue);
             float k_p = 0.3f;
             float k_d = 0.2f;
             // keep track of target position and velocity
@@ -292,22 +278,101 @@ namespace UnityStandardAssets.Vehicles.Car
         
         
 
-        bool CarInFront()
+        private void CarInFront()
         {
-            float maxRange = 15f;
-            bool carInFront = false;
+            float maxRange = terrainInfo.x_N;
+            //float maxRange = 15f;
             RaycastHit hit_forward;
             Vector3 forward = transform.TransformDirection(Vector3.forward);
-            if (Physics.Raycast(transform.position, forward, out hit_forward, maxRange, layerMask))
+            //Debug.DrawRay(transform.position+transform.up, forward * maxRange, Color.red);
+            bool hit = Physics.Raycast(transform.position+transform.up, forward, out hit_forward, maxRange, layerMask);
+            if (hit) // && (hit_forward.transform.name == "CarBlimp(Clone)"))
             {
-                Debug.DrawRay(transform.position, forward * hit_forward.distance, Color.red);
+                //Debug.DrawRay(transform.position+transform.up, forward * hit_forward.distance, Color.cyan);
                 carInFront = true;
-                Debug.Log("I see a car");
+                //Debug.Log("I see a car");
+
+                Vector3 adjust = new Vector3(0,0,1f);
+                Vector3 adjust2 = new Vector3(1f, 0, 0);
+                //Debug.DrawLine(hit_forward.point + adjust,hit_forward.point - adjust, Color.green);
+                //Debug.DrawLine(hit_forward.point + adjust2, hit_forward.point - adjust2, Color.green);
+                //Debug.DrawLine(transform.position, hit_forward.point, Color.green);
+
+            }
+            else
+            {
+                carInFront = false;
             }
             //            print(carInFront);
             
-            return carInFront;
         }
+
+
+        public List<Node> pathAdjustRightWall(List<Node> path)
+        {
+            int nodeNum = 0;
+            List<Node> rightPath = new List<Node>();
+            //Quaternion rotation = Quaternion.Euler(0, 90, 0);
+            //
+            foreach(Node n in path )
+            {
+                rightPath.Add(n.copy()); // Rightpath has a copy now of path
+            }
+
+            foreach (Node n in rightPath)
+            {
+                Debug.Log("Node number: " + nodeNum + " heading: " + n.heading);
+                nodeNum++;
+                switch (n.heading)
+                {
+                    case 90:
+
+                        if ((!graph.nodes[n.i + 2, n.j].walkable) && (!graph.nodes[n.i - 1, n.j].walkable) && (graph.nodes[n.i + 1, n.j].walkable))
+                        {
+                            Debug.Log("Adjusted right from: "+ n.i);
+                            //rightPath[rightPath.IndexOf(n)] = graph.nodes[n.i + 1, n.j]; 
+                            n.i = n.i + 1;
+                            Debug.Log("To: " + n.i);
+                        }
+                        break;
+
+                    case 180:
+                        if ((!graph.nodes[n.i, n.j + 2].walkable) && (!graph.nodes[n.i, n.j - 1].walkable) && (graph.nodes[n.i, n.j + 1].walkable))
+                        {
+                            Debug.Log("Adjusted Up");
+
+                            n.j = n.j + 1;
+                        }
+                        break;
+
+                    case 270:
+
+                        if ((!graph.nodes[n.i - 2, n.j].walkable) && (!graph.nodes[n.i + 1, n.j].walkable) && (graph.nodes[n.i - 1, n.j].walkable))
+                        {
+                            Debug.Log("Adjusted left");
+
+                            n.i = n.i - 1;
+                        }
+                        break;
+                    case 0:
+                    case 360:
+
+                        if ((!graph.nodes[n.i, n.j - 2].walkable) && (!graph.nodes[n.i, n.j + 1].walkable) && (graph.nodes[n.i, n.j - 1].walkable))
+                        {
+                            Debug.Log("Adjusted Down");
+
+                            n.j = n.j - 1;
+                        }
+                        break;
+                }
+                Debug.Log("Final location for this node: i:" + n.i + " j: " + n.j);
+
+            }
+            return rightPath;
+        }
+
+
+
 
 
     }

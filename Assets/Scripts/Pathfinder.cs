@@ -12,8 +12,8 @@ public class PathFinder : MonoBehaviour
         Node start_node = graph.getNodeFromPoint(start_position);
         start_node.heading = start_heading;
         Node goal_node = graph.getNodeFromPoint(goal_position);
-        Debug.Log("Start i: " + start_node.i + "Start j:" + start_node.j);
-        Debug.Log("Goal i: " + goal_node.i + "Goal j:" + goal_node.j);
+        //Debug.Log("Start i: " + start_node.i + "Start j:" + start_node.j);
+        //Debug.Log("Goal i: " + goal_node.i + "Goal j:" + goal_node.j);
 
         List<Node> open_set = new List<Node>();
         HashSet<Node> closed_set = new HashSet<Node>();
@@ -27,8 +27,8 @@ public class PathFinder : MonoBehaviour
             Node current = open_set[0];
             if (k)
             {
-                Debug.Log("Nodo fuori penalty: " + current.wallClosenessCost);
-                Debug.Log("Totale: " + current.fCost);
+                //Debug.Log("Nodo fuori penalty: " + current.wallClosenessCost);
+                //Debug.Log("Totale: " + current.fCost);
             }
             for (int i=1; i<open_set.Count; i++)
             {
@@ -42,7 +42,7 @@ public class PathFinder : MonoBehaviour
             if (current == goal_node)
             {
                 path = new List<Node>();
-                print("goal node");
+                //print("goal node");
                 Node previous_node = current;
 
                 while (previous_node != start_node)
@@ -67,7 +67,7 @@ public class PathFinder : MonoBehaviour
                                     String s = String.Format("Amazing. Node1:[{0},{1}] Node2:[{2},{3}] Node3[{4},{5}] Node4[{6},{7}]",
                                         previous_node.i, previous_node.j, back_1.i, back_1.j, back_2.i, back_2.j, back_3.i, back_3.j);
                                     //TODO COMMENT THIS!!!
-                                    Debug.Log(s);
+                                    //Debug.Log(s);
                                     Node first_interpol = graph.nodes[previous_node.i, back_1.j];
                                     first_interpol.parent = back_1;
                                     previous_node.parent = first_interpol;
@@ -164,10 +164,10 @@ public class PathFinder : MonoBehaviour
                 {
                     additional_cost *= 1.5f;
                 }
-                if(additional_cost != 0)
-                {
-                    Debug.Log("Current h: " + current.heading + " Next h:" + neigh_heading + "Penalty: " + additional_cost);
-                }
+                //if(additional_cost != 0)
+                //{
+                //    Debug.Log("Current h: " + current.heading + " Next h:" + neigh_heading + "Penalty: " + additional_cost);
+                //}
                 additional_cost = additional_cost > 0 ? additional_cost : 1;
 
                
@@ -238,7 +238,7 @@ public class PathFinder : MonoBehaviour
                 if (!graph.nodes[start.i, end.j].walkable)
                 {
                     addition = 2;
-                    Debug.Log("ADDITION");
+                    //Debug.Log("ADDITION");
                     if (!graph.nodes[start.j, end.i].walkable)
                         addition += 100000;
                 }
@@ -246,7 +246,7 @@ public class PathFinder : MonoBehaviour
                 if (!graph.nodes[start.j, end.i].walkable)
                 {
                     addition = 2;
-                    Debug.Log("ADDITION 2");
+                    //Debug.Log("ADDITION 2");
                     if (!graph.nodes[start.i, end.j].walkable)
                         addition += 100000;
                 }
@@ -290,7 +290,7 @@ public class PathFinder : MonoBehaviour
         }
         if (smoothed.Count != path.Count)
         {
-            Debug.Log("ERROR!");
+            //Debug.Log("ERROR!");
         }
 
         
@@ -419,7 +419,7 @@ public class PathFinder : MonoBehaviour
                 Math.Abs(old.z_pos - path[i].z_pos) < 0.01 && Math.Abs(old.z_pos - path[i + 1].z_pos) < 0.01
                 )
             {
-                Debug.Log("Skipping node " + i);
+                //Debug.Log("Skipping node " + i);
                 continue;
 
             }

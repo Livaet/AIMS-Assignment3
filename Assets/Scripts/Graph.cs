@@ -24,6 +24,8 @@ public class Graph
     public HashSet<GraphEdge> edges;
     public Node[,] nodes;
 
+    public static Graph instance;
+
     public Graph(){
     }
     public Graph(int i_size, int j_size, float x_low, float x_high, float z_low, float z_high)
@@ -259,12 +261,12 @@ public class Graph
 
     public Node getNodeFromPoint(Vector3 position)
     {
-        Debug.Log("X: " + position.x);
-        Debug.Log(x_low);
-        Debug.Log(x_unit);
-        Debug.Log("Z: " + position.z);
-        Debug.Log(z_low);
-        Debug.Log(z_unit);
+        //Debug.Log("X: " + position.x);
+        //Debug.Log(x_low);
+        //Debug.Log(x_unit);
+        //Debug.Log("Z: " + position.z);
+        //Debug.Log(z_low);
+        //Debug.Log(z_unit);
 
         int i = (int)((position.x - x_low) / x_unit);
         int j = (int)((position.z - z_low)/ z_unit);
