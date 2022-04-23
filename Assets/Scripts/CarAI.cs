@@ -42,8 +42,7 @@ namespace UnityStandardAssets.Vehicles.Car
         private Graph graph;
         public List<Node> stopLines;
         private List<Node> path;
-        public List<Node> preliminaryPath;
-        public List<Node> rightPath = new List<Node>();
+        private List<Node> preliminaryPath;
 
 
 
@@ -96,16 +95,15 @@ namespace UnityStandardAssets.Vehicles.Car
             setCarObject();
             //setImaginaryObstacles(); // moved to car intersection
             //stopNodes(); // moved to car intersection
-
-            for (int i = 5; i < 6; i++)
+            for (int i = 14; i < 19; i++)
             {
                 if (currentGameObject == friends[i])
                     preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
             }
-            //path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
-
-            pathAdjustRightWall(preliminaryPath); // Should return RightPath
-            path = rightPath;
+            
+            //preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            path = pathAdjustRightWall(preliminaryPath); 
+            
 
         }
 
@@ -295,8 +293,8 @@ namespace UnityStandardAssets.Vehicles.Car
 
         private void CarInFront()
         {
-            float maxRange = terrainInfo.x_N;
-            //float maxRange = 15f;
+            //float maxRange = terrainInfo.x_N;
+            float maxRange = 15f;
             RaycastHit hit_forward;
             Vector3 forward = transform.TransformDirection(Vector3.forward);
             //Debug.DrawRay(transform.position+transform.up, forward * maxRange, Color.red);
@@ -321,75 +319,62 @@ namespace UnityStandardAssets.Vehicles.Car
             //            print(carInFront);
             
         }
-
-
-        public void pathAdjustRightWall(List<Node> path)
+        private List<Node> pathAdjustRightWall(List<Node> path)
         {
-            int nodeNum = 0;
-            //Quaternion rotation = Quaternion.Euler(0, 90, 0);
-            //
-            foreach(Node n in path )
-            {
-                rightPath.Add(n.copy()); // Rightpath has a copy now of path
-            }
+            List<Node> correctedPath = new List<Node>();
 
-            foreach (Node n in rightPath)
+            foreach (Node n in path)
             {
-                Debug.Log("Node number: " + nodeNum + " heading: " + n.heading);
-                switch (n.heading)
+                if (n.heading == 90)
                 {
-                    case 90:
-
-                        if ((!graph.nodes[n.i + 2, n.j].walkable) && (!graph.nodes[n.i - 1, n.j].walkable) && (graph.nodes[n.i + 1, n.j].walkable))
-                        {
-                            Debug.Log("Adjusted right from: "+ n.i);
-                            //rightPath[rightPath.IndexOf(n)] = graph.nodes[n.i + 1, n.j]; 
-                            rightPath[nodeNum] = graph.nodes[n.i + 1, n.j];
-                            Debug.Log("To: " + rightPath[nodeNum].i);
-                        }
-                        break;
-
-                    case 180:
-                        if ((!graph.nodes[n.i, n.j + 2].walkable) && (!graph.nodes[n.i, n.j - 1].walkable) && (graph.nodes[n.i, n.j + 1].walkable))
-                        {
-                            Debug.Log("Adjusted Up");
-
-                            rightPath[nodeNum] = graph.nodes[n.i, n.j+1];
-
-                            //n.j = n.j + 1;
-                        }
-                        break;
-
-                    case 270:
-
-                        if ((!graph.nodes[n.i - 2, n.j].walkable) && (!graph.nodes[n.i + 1, n.j].walkable) && (graph.nodes[n.i - 1, n.j].walkable))
-                        {
-                            Debug.Log("Adjusted left");
-
-                            rightPath[nodeNum] = graph.nodes[n.i - 1, n.j];
-
-                            //n.i = n.i - 1;
-                        }
-                        break;
-                    case 0:
-                    case 360:
-
-                        if ((!graph.nodes[n.i, n.j - 2].walkable) && (!graph.nodes[n.i, n.j + 1].walkable) && (graph.nodes[n.i, n.j - 1].walkable))
-                        {
-                            Debug.Log("Adjusted Down");
-
-                            rightPath[nodeNum] = graph.nodes[n.i, n.j-1];
-
-                            //n.j = n.j - 1;
-                        }
-                        break;
+                    if ((!graph.nodes[n.i + 2, n.j].walkable) && (!graph.nodes[n.i - 1, n.j].walkable) && (graph.nodes[n.i + 1, n.j].walkable))
+                    {
+                        correctedPath.Add(graph.nodes[n.i + 1, n.j]);
+                    }
+                    else
+                    {
+                        correctedPath.Add(n);
+                    }
                 }
-
-                Debug.Log("Final location for this node: i:" + rightPath[nodeNum].i + " j: " + rightPath[nodeNum].j);
-                nodeNum++;
-
-
+                else if (n.heading == 180)
+                {
+                    if ((!graph.nodes[n.i, n.j + 2].walkable) && (!graph.nodes[n.i, n.j - 1].walkable) && (graph.nodes[n.i, n.j + 1].walkable))
+                    {
+                        correctedPath.Add(graph.nodes[n.i, n.j + 1]);
+                    }
+                    else
+                    {
+                        correctedPath.Add(n);
+                    }
+                }
+                else if (n.heading == 270)
+                {
+                    if ((!graph.nodes[n.i - 2, n.j].walkable) && (!graph.nodes[n.i + 1, n.j].walkable) && (graph.nodes[n.i - 1, n.j].walkable))
+                    {
+                        correctedPath.Add(graph.nodes[n.i - 1, n.j]);
+                    }
+                    else
+                    {
+                        correctedPath.Add(n);
+                    }
+                }
+                else if (n.heading == 360 || n.heading == 0)
+                {
+                    if ((!graph.nodes[n.i, n.j - 2].walkable) && (!graph.nodes[n.i, n.j + 1].walkable) && (graph.nodes[n.i, n.j - 1].walkable))
+                    {
+                        correctedPath.Add(graph.nodes[n.i, n.j - 1]);
+                    }
+                    else
+                    {
+                        correctedPath.Add(n);
+                    }
+                }
+                else
+                {
+                    correctedPath.Add(n);
+                }
             }
+            return correctedPath; 
         }
 
 
