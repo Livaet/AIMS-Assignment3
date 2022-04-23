@@ -354,7 +354,9 @@ namespace UnityStandardAssets.Vehicles.Car
                         {
                             Debug.Log("Adjusted Up");
 
-                            n.j = n.j + 1;
+                            rightPath[nodeNum] = graph.nodes[n.i, n.j+1];
+
+                            //n.j = n.j + 1;
                         }
                         break;
 
@@ -364,7 +366,9 @@ namespace UnityStandardAssets.Vehicles.Car
                         {
                             Debug.Log("Adjusted left");
 
-                            n.i = n.i - 1;
+                            rightPath[nodeNum] = graph.nodes[n.i - 1, n.j];
+
+                            //n.i = n.i - 1;
                         }
                         break;
                     case 0:
@@ -374,7 +378,9 @@ namespace UnityStandardAssets.Vehicles.Car
                         {
                             Debug.Log("Adjusted Down");
 
-                            n.j = n.j - 1;
+                            rightPath[nodeNum] = graph.nodes[n.i, n.j-1];
+
+                            //n.j = n.j - 1;
                         }
                         break;
                 }
