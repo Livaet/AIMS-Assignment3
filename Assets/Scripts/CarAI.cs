@@ -26,24 +26,42 @@ namespace UnityStandardAssets.Vehicles.Car
     {
         // Car Controller
         private CarController m_Car; // the car controller we want to use
-        private Vector3 target_velocity;
-        private Vector3 oldCarPosition;
-        private Vector3 oldTargetPosition;
+        Vector3 carSize = new Vector3(2.43f, 0.41f, 4.47f);
 
+        // Game controller
         public GameObject currentGameObject;
 
         // Terrain variables
-
         public GameObject terrain_manager_game_object;
         TerrainManager terrain_manager;
+        TerrainInfo terrainInfo;
+
+
+        // pathing variables
+        private CarIntersection intersection;
+        private Graph graph;
+        public List<Node> stopLines;
+        private List<Node> path;
+        public List<Node> preliminaryPath;
+        public List<Node> rightPath = new List<Node>();
+
+
 
         // Friends and enemy variables
         public GameObject[] friends; // use these to avoid collisions
-
         public GameObject my_goal_object;
 
-        //Graph and waypoint helpers
+        //Driving helpers
         int nextWaypoint;
+        private Vector3 target_velocity;
+        private Vector3 oldCarPosition;
+        private Vector3 oldTargetPosition;
+        public bool carInFront;
+
+
+        //Obstacle avoidance helpers
+        bool had_hit_backward = false;
+
 
         //Status keepers
         bool stopAndWait = false;
@@ -51,22 +69,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
         Rigidbody body;
 
-        //move parameters
-        //float steering;
-        //float acceleration = 0;
-        //float braking;
-        //float handbrake;
 
-        private CarIntersection intersection; 
-
-        private Graph graph; 
-        public List<Node> stopLines;
-
-        private List<Node> path;
-
-        public bool carInFront;
-
-        TerrainInfo terrainInfo;
 
         void Start()
         {
@@ -77,8 +80,6 @@ namespace UnityStandardAssets.Vehicles.Car
             GameObject intersectionObject = GameObject.FindGameObjectsWithTag("Intersection")[0];
             intersection = intersectionObject.GetComponent<CarIntersection>(); //Maybe not get component 
             graph = intersection.getGraph();
-            //print("z high " + graph.z_high);
-            //print("z low " + graph.z_low);
             stopLines = intersection.getStopLines();
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
@@ -93,17 +94,18 @@ namespace UnityStandardAssets.Vehicles.Car
             terrainInfo = TerrainManager.instance.myInfo;
 
             setCarObject();
-            //setImaginaryObstacles();
-            //stopNodes();
+            //setImaginaryObstacles(); // moved to car intersection
+            //stopNodes(); // moved to car intersection
 
-            //for (int i = 5; i < 6; i++)
-            //{
-            //    if (currentGameObject == friends[i])
-            //        path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
-            //}
-            path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            for (int i = 5; i < 6; i++)
+            {
+                if (currentGameObject == friends[i])
+                    preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            }
+            //path = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
 
-            path = pathAdjustRightWall(path);
+            pathAdjustRightWall(preliminaryPath); // Should return RightPath
+            path = rightPath;
 
         }
 
@@ -136,6 +138,14 @@ namespace UnityStandardAssets.Vehicles.Car
 
             // this is how you control the car
             //m_Car.Move(1f, 1f, 1f, 0f);
+
+            if (path != null) {
+                for (int i = 0; i < path.Count - 1; i++)
+                {
+                    Debug.DrawLine(path[i].worldPosition, path[i + 1].worldPosition, Color.cyan);
+                }
+            }
+            
             CarInFront();
             if (!carInFront)
             {
@@ -229,6 +239,8 @@ namespace UnityStandardAssets.Vehicles.Car
             //Debug.Log(hit.distance);
             //Quaternion rotation = Quaternion.Euler(0, 90, 0);
             //Debug.DrawLine()
+
+
             Node node = graph.getNodeFromPoint(transform.position);
             Debug.DrawLine(transform.position, graph.nodes[node.i + 2, node.j].worldPosition, Color.blue);
             float k_p = 0.3f;
@@ -276,7 +288,10 @@ namespace UnityStandardAssets.Vehicles.Car
             }
         }
         
-        
+        public void setAccelerationSteering()
+        {
+
+        }
 
         private void CarInFront()
         {
@@ -292,8 +307,8 @@ namespace UnityStandardAssets.Vehicles.Car
                 carInFront = true;
                 //Debug.Log("I see a car");
 
-                Vector3 adjust = new Vector3(0,0,1f);
-                Vector3 adjust2 = new Vector3(1f, 0, 0);
+                //Vector3 adjust = new Vector3(0,0,1f);
+                //Vector3 adjust2 = new Vector3(1f, 0, 0);
                 //Debug.DrawLine(hit_forward.point + adjust,hit_forward.point - adjust, Color.green);
                 //Debug.DrawLine(hit_forward.point + adjust2, hit_forward.point - adjust2, Color.green);
                 //Debug.DrawLine(transform.position, hit_forward.point, Color.green);
@@ -308,10 +323,9 @@ namespace UnityStandardAssets.Vehicles.Car
         }
 
 
-        public List<Node> pathAdjustRightWall(List<Node> path)
+        public void pathAdjustRightWall(List<Node> path)
         {
             int nodeNum = 0;
-            List<Node> rightPath = new List<Node>();
             //Quaternion rotation = Quaternion.Euler(0, 90, 0);
             //
             foreach(Node n in path )
@@ -322,7 +336,6 @@ namespace UnityStandardAssets.Vehicles.Car
             foreach (Node n in rightPath)
             {
                 Debug.Log("Node number: " + nodeNum + " heading: " + n.heading);
-                nodeNum++;
                 switch (n.heading)
                 {
                     case 90:
@@ -331,8 +344,8 @@ namespace UnityStandardAssets.Vehicles.Car
                         {
                             Debug.Log("Adjusted right from: "+ n.i);
                             //rightPath[rightPath.IndexOf(n)] = graph.nodes[n.i + 1, n.j]; 
-                            n.i = n.i + 1;
-                            Debug.Log("To: " + n.i);
+                            rightPath[nodeNum] = graph.nodes[n.i + 1, n.j];
+                            Debug.Log("To: " + rightPath[nodeNum].i);
                         }
                         break;
 
@@ -365,13 +378,96 @@ namespace UnityStandardAssets.Vehicles.Car
                         }
                         break;
                 }
-                Debug.Log("Final location for this node: i:" + n.i + " j: " + n.j);
+
+                Debug.Log("Final location for this node: i:" + rightPath[nodeNum].i + " j: " + rightPath[nodeNum].j);
+                nodeNum++;
+
 
             }
-            return rightPath;
         }
 
 
+        //private void avoid_obstacles(bool curve_approaching = false)
+        //{
+        //    RaycastHit hit;
+        //    Vector3 maxRange = carSize * 1.2f;
+        //    bool had_hit = false;
+
+
+        //    if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+        //    {
+        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+        //        this.accelerationAmount *= 0.5f;
+        //        this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
+        //        Debug.Log("Frontal collision, distance: " + hit.distance);
+        //        had_hit = true;
+
+        //        if (hit.distance < 5) //recovery from frontal hit
+        //        {
+        //            Debug.Log("Collision STOP");
+        //            this.accelerationAmount = 0;
+        //            this.footbrake = -1;
+        //            this.steeringAmount *= -1;
+        //            this.handbrake = 0;
+        //        }
+        //    }
+
+        //    /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+        //    {
+        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+        //        this.accelerationAmount = 1;
+        //        this.footbrake = 0;
+        //        Debug.Log("Back collision");
+        //        had_hit = true;
+
+        //    }*/
+
+        //    if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
+        //    {
+        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+        //        this.accelerationAmount *= 0.7f;
+        //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+        //        this.steeringAmount += -0.5f;
+        //        Debug.Log("Right collision");
+        //        had_hit = true;
+
+
+        //    }
+
+        //    if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
+        //    {
+        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+        //        this.accelerationAmount *= 0.7f;
+        //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+        //        this.steeringAmount += 0.5f;
+        //        Debug.Log("Left collision");
+
+        //        had_hit = true;
+        //    }
+
+        //    if (!had_hit && !curve_approaching)
+        //    {
+        //        this.accelerationAmount *= 1.25f;
+        //        Debug.Log("Not hit speed");
+        //    }
+
+        //    if (!had_hit && m_Car.CurrentSpeed < 1f || had_hit_backward)
+        //    {
+        //        had_hit_backward = true;
+        //        this.accelerationAmount = 1;
+        //        this.footbrake = 0;
+        //        this.handbrake = 0;
+        //        this.steeringAmount *= 1;
+        //        if (m_Car.CurrentSpeed > 10f)
+        //            had_hit_backward = false;
+        //    }
+
+
+        //}
 
 
 
