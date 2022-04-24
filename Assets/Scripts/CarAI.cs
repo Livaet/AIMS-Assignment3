@@ -82,7 +82,7 @@ namespace UnityStandardAssets.Vehicles.Car
             stopLines = intersection.getStopLines();
 
             Vector3 start_pos = transform.position; // terrain_manager.myInfo.start_pos;
-            Vector3 goal_pos = terrain_manager.myInfo.goal_pos;
+            Vector3 goal_pos = my_goal_object.transform.position;
 
             friends = GameObject.FindGameObjectsWithTag("Car");
 
@@ -95,13 +95,18 @@ namespace UnityStandardAssets.Vehicles.Car
             setCarObject();
             //setImaginaryObstacles(); // moved to car intersection
             //stopNodes(); // moved to car intersection
-            for (int i = 14; i < 19; i++)
-            {
-                if (currentGameObject == friends[i])
-                    preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
-            }
-            
-            //preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            //for (int i = 2; i < 3; i++)
+            //{
+            //    if (currentGameObject == friends[i])
+            //    {
+            //        preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            //        Debug.Log("starting node is : " + graph.getNodeFromPoint(start_pos).i + " " + graph.getNodeFromPoint(start_pos).j);
+            //        Debug.Log("final destination is: " + goal_pos);
+            //        Debug.DrawLine(start_pos, goal_pos);
+            //    }
+            //}
+
+            preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
             path = pathAdjustRightWall(preliminaryPath); 
             
 
@@ -137,12 +142,12 @@ namespace UnityStandardAssets.Vehicles.Car
             // this is how you control the car
             //m_Car.Move(1f, 1f, 1f, 0f);
 
-            if (path != null) {
-                for (int i = 0; i < path.Count - 1; i++)
-                {
-                    Debug.DrawLine(path[i].worldPosition, path[i + 1].worldPosition, Color.cyan);
-                }
-            }
+            //if (path != null) {
+            //    for (int i = 0; i < path.Count - 1; i++)
+            //    {
+            //        Debug.DrawLine(path[i].worldPosition, path[i + 1].worldPosition, Color.cyan);
+            //    }
+            //}
             
             CarInFront();
             if (!carInFront)
@@ -218,6 +223,9 @@ namespace UnityStandardAssets.Vehicles.Car
                         Gizmos.color = Color.black;
                         Gizmos.DrawLine(path[i].worldPosition, path[i + 1].worldPosition);
                     }
+                    //Gizmos.color = Color.yellow;
+                    //Gizmos.DrawCube(terrain_manager.myInfo.goal_pos, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+                    //Gizmos.DrawCube(terrain_manager.myInfo.start_pos, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
                 }
 
             }
