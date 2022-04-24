@@ -27,6 +27,7 @@ namespace UnityStandardAssets.Vehicles.Car
         // Car Controller
         private CarController m_Car; // the car controller we want to use
         Vector3 carSize = new Vector3(2.43f, 0.41f, 4.47f);
+        int carId;
 
         // Game controller
         public GameObject currentGameObject;
@@ -56,6 +57,10 @@ namespace UnityStandardAssets.Vehicles.Car
         private Vector3 oldCarPosition;
         private Vector3 oldTargetPosition;
         public bool carInFront;
+        float acceleration;
+        float footbrake;
+        float handbrake;
+        float steering;
 
 
         //Obstacle avoidance helpers
@@ -265,19 +270,27 @@ namespace UnityStandardAssets.Vehicles.Car
             Vector3 velocity_error = target_velocity - car_velocity;
             Vector3 correction_vector = k_p * position_error + k_d * velocity_error;
 
-            float steering = Vector3.Dot(correction_vector, transform.right);
+            steering = Vector3.Dot(correction_vector, transform.right);
             float forward_velocity = Vector3.Dot(correction_vector, transform.forward);
 
 
 
             if (forward_velocity > 0)
             {
-                m_Car.Move(steering, 1, 1, 0f);
+                this.acceleration = 1f;
+                this.footbrake = 0f;
+                this.handbrake = 0f;
             }
             else
             {
-                m_Car.Move(steering, 0, -1f, 0f); // acceleration is clamped to 0,1. We reverse using the footbrake. 
+                this.acceleration = 0f;
+                this.footbrake = -1f; // acceleration is clamped to 0,1. We reverse using the footbrake. 
+                this.handbrake = 0f;
             }
+
+            avoid_obstacles();
+            
+            m_Car.Move(steering, acceleration, footbrake, handbrake);
 
 
             Debug.DrawLine(car_position, target_position, Color.white);
@@ -386,89 +399,99 @@ namespace UnityStandardAssets.Vehicles.Car
         }
 
 
-        //private void avoid_obstacles(bool curve_approaching = false)
-        //{
-        //    RaycastHit hit;
-        //    Vector3 maxRange = carSize * 1.2f;
-        //    bool had_hit = false;
+        private void avoid_obstacles()
+        {
+            RaycastHit hit;
+            Vector3 maxRange = carSize * 1.2f;
+            bool had_hit = false;
 
 
-        //    if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
-        //    {
-        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-        //        this.accelerationAmount *= 0.5f;
-        //        this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
-        //        Debug.Log("Frontal collision, distance: " + hit.distance);
-        //        had_hit = true;
+            if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.acceleration *= 0.5f;
+                this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
+                Debug.Log("Frontal collision, distance: " + hit.distance);
+                Debug.Log("CarID; " + carId);
+                had_hit = true;
 
-        //        if (hit.distance < 5) //recovery from frontal hit
-        //        {
-        //            Debug.Log("Collision STOP");
-        //            this.accelerationAmount = 0;
-        //            this.footbrake = -1;
-        //            this.steeringAmount *= -1;
-        //            this.handbrake = 0;
-        //        }
-        //    }
+                if (hit.distance < 5) //recovery from frontal hit
+                {
+                    Debug.Log("Collision STOP" + carId);
+                    this.acceleration = 0;
+                    this.footbrake = -1;
+                    this.steering *= -1;
+                    this.handbrake = 0;
+                }
+            }
 
-        //    /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
-        //    {
-        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-        //        this.accelerationAmount = 1;
-        //        this.footbrake = 0;
-        //        Debug.Log("Back collision");
-        //        had_hit = true;
+            /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.accelerationAmount = 1;
+                this.footbrake = 0;
+                Debug.Log("Back collision");
+                had_hit = true;
 
-        //    }*/
+            }*/
 
-        //    if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
-        //    {
-        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-        //        this.accelerationAmount *= 0.7f;
-        //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-        //        this.steeringAmount += -0.5f;
-        //        Debug.Log("Right collision");
-        //        had_hit = true;
-
-
-        //    }
-
-        //    if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
-        //    {
-        //        Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
-        //        Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-        //        this.accelerationAmount *= 0.7f;
-        //        this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-        //        this.steeringAmount += 0.5f;
-        //        Debug.Log("Left collision");
-
-        //        had_hit = true;
-        //    }
-
-        //    if (!had_hit && !curve_approaching)
-        //    {
-        //        this.accelerationAmount *= 1.25f;
-        //        Debug.Log("Not hit speed");
-        //    }
-
-        //    if (!had_hit && m_Car.CurrentSpeed < 1f || had_hit_backward)
-        //    {
-        //        had_hit_backward = true;
-        //        this.accelerationAmount = 1;
-        //        this.footbrake = 0;
-        //        this.handbrake = 0;
-        //        this.steeringAmount *= 1;
-        //        if (m_Car.CurrentSpeed > 10f)
-        //            had_hit_backward = false;
-        //    }
+            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.acceleration *= 0.7f;
+                this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+                this.steering += -0.5f;
+                Debug.Log("Right collision " + carId);
+                had_hit = true;
 
 
-        //}
+            }
+
+            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.acceleration *= 0.7f;
+                this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
+                this.steering += 0.5f;
+                Debug.Log("Left collision" + carId);
+
+                had_hit = true;
+            }
+
+            //if (!had_hit && !curve_approaching)
+            //{
+            //    this.acceleration *= 1.25f;
+            //    Debug.Log("Not hit speed");
+            //}
+
+            if (!had_hit && m_Car.CurrentSpeed < 1f || had_hit_backward)
+            {
+                had_hit_backward = true;
+                this.acceleration = 1;
+                this.footbrake = 0;
+                this.handbrake = 0;
+                this.steering *= 1;
+                if (m_Car.CurrentSpeed > 10f)
+                    had_hit_backward = false;
+            }
 
 
+        }
 
+        void setCarId()
+        {
+            for (int i = 0; i < friends.Length; i++)
+            {
+                if (m_Car.transform.position == friends[i].transform.position)
+                {
+                    //car_id = convexCovers.Count;
+                    carId = i;
+                }
+            }
+        }
     }
 }
