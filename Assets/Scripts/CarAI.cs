@@ -98,6 +98,7 @@ namespace UnityStandardAssets.Vehicles.Car
             terrainInfo = TerrainManager.instance.myInfo;
 
             setCarObject();
+            setCarId();
             //setImaginaryObstacles(); // moved to car intersection
             //stopNodes(); // moved to car intersection
             //for (int i = 2; i < 3; i++)
@@ -404,9 +405,10 @@ namespace UnityStandardAssets.Vehicles.Car
             RaycastHit hit;
             Vector3 maxRange = carSize * 1.2f;
             bool had_hit = false;
+            LayerMask onlyObstacles = ~(layerMask); // should give all layers except the one with the cars.
 
 
-            if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z))
+            if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z, onlyObstacles))
             {
                 Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
@@ -437,7 +439,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             }*/
 
-            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x))
+            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x, onlyObstacles))
             {
                 Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
@@ -450,7 +452,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             }
 
-            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x))
+            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x, onlyObstacles))
             {
                 Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
