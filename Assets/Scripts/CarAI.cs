@@ -62,6 +62,10 @@ namespace UnityStandardAssets.Vehicles.Car
         float handbrake;
         float steering;
 
+        //debug helpers
+        bool debugOn = true;
+        int debugThisCarId = 41;
+
 
         //Obstacle avoidance helpers
         bool had_hit_backward = false;
@@ -214,6 +218,11 @@ namespace UnityStandardAssets.Vehicles.Car
                 
                 Gizmos.color = (carInFront) ? Color.red : Color.cyan; // position of car
                 Gizmos.DrawCube(currentNode.worldPosition, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+                if ((debugOn) && (carId == debugThisCarId))
+                {
+                    Gizmos.color = Color.green;
+                    Gizmos.DrawCube(transform.position, new Vector3(graph.x_unit * 0.8f, 0.5f, graph.z_unit * 0.8f));
+                }
 
                 //foreach (Node n in stopLines)
                 //{
@@ -302,7 +311,7 @@ namespace UnityStandardAssets.Vehicles.Car
             //Debug.Log("Steering:" + steering + " Acceleration:" + acceleration);
             //m_Car.Move(steering, acceleration, acceleration, 0f);
 
-            if (Vector3.Distance(car_position, target_position) < 6)
+            if (Vector3.Distance(car_position, target_position) < 4)
             {
                 nextWaypoint++;
             }
@@ -404,7 +413,7 @@ namespace UnityStandardAssets.Vehicles.Car
         {
             RaycastHit hit;
             Vector3 maxRange = carSize * 1.2f;
-            bool had_hit = false;
+            bool had_hit = false; // They haven't hit anything. 
             LayerMask onlyObstacles = ~(layerMask); // should give all layers except the one with the cars.
 
 
@@ -416,11 +425,11 @@ namespace UnityStandardAssets.Vehicles.Car
                 this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
                 Debug.Log("Frontal collision, distance: " + hit.distance);
                 Debug.Log("CarID; " + carId);
-                had_hit = true;
+                had_hit = true; // oops I hit something.
 
                 if (hit.distance < 5) //recovery from frontal hit
                 {
-                    Debug.Log("Collision STOP" + carId);
+                    Debug.Log("Collision STOP: " + carId);
                     this.acceleration = 0;
                     this.footbrake = -1;
                     this.steering *= -1;
@@ -428,40 +437,40 @@ namespace UnityStandardAssets.Vehicles.Car
                 }
             }
 
-            /*if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z))
+            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z, onlyObstacles)) // The last time we used this THIS DID NOT WORK
             {
-                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.back) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                this.accelerationAmount = 1;
+                this.acceleration = 1;
                 this.footbrake = 0;
                 Debug.Log("Back collision");
                 had_hit = true;
 
-            }*/
+            }
 
-            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.right), out hit, maxRange.x, onlyObstacles))
+            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.right), out hit, maxRange.z, onlyObstacles))
             {
-                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.right) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
                 this.acceleration *= 0.7f;
                 this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-                this.steering += -0.5f;
-                Debug.Log("Right collision " + carId);
-                had_hit = true;
+                this.steering += -0.8f;
+                Debug.Log("Right collision: " + carId);
+                had_hit = true; // oops I hit something.
 
 
             }
 
-            if (Physics.Raycast(transform.position + transform.right, transform.TransformDirection(Vector3.left), out hit, maxRange.x, onlyObstacles))
+            if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.left), out hit, maxRange.z, onlyObstacles))
             {
-                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.left) * hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
                 this.acceleration *= 0.7f;
                 this.footbrake = this.footbrake < 0.1f ? 0.3f : this.footbrake * 1.5f;
-                this.steering += 0.5f;
-                Debug.Log("Left collision" + carId);
+                this.steering += 0.8f;
+                Debug.Log("Left collision: " + carId);
 
-                had_hit = true;
+                had_hit = true; // oops I hit something.
             }
 
             //if (!had_hit && !curve_approaching)
@@ -470,18 +479,16 @@ namespace UnityStandardAssets.Vehicles.Car
             //    Debug.Log("Not hit speed");
             //}
 
-            if (!had_hit && m_Car.CurrentSpeed < 1f || had_hit_backward)
-            {
-                had_hit_backward = true;
-                this.acceleration = 1;
-                this.footbrake = 0;
-                this.handbrake = 0;
-                this.steering *= 1;
-                if (m_Car.CurrentSpeed > 10f)
-                    had_hit_backward = false;
-            }
-
-
+            //if (!had_hit && m_Car.CurrentSpeed < 1f || had_hit_backward) // The car current speed can be <1f if they have a car in front of them, so this is making a problem. It says if I haven't hit anything but my speed is below 1, then I probably backed into something. 
+            //{
+            //    had_hit_backward = true;
+            //    this.acceleration = 1;
+            //    this.footbrake = 0;
+            //    this.handbrake = 0;
+            //    this.steering *= 1;
+            //    if (m_Car.CurrentSpeed > 10f)
+            //        had_hit_backward = false;
+            //}
         }
 
         void setCarId()
