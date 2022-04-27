@@ -59,16 +59,18 @@ namespace UnityStandardAssets.Vehicles.Car
         public bool carInFront;
         float acceleration;
         float footbrake;
-        float handbrake;
+        float handbrake = 0f;
         float steering;
 
         //debug helpers
         bool debugOn = true;
-        int debugThisCarId = 41;
+        int debugThisCarId = 20;
 
 
         //Obstacle avoidance helpers
         bool had_hit_backward = false;
+        bool had_hit = false; // They haven't hit anything. 
+
 
 
         //Status keepers
@@ -105,18 +107,18 @@ namespace UnityStandardAssets.Vehicles.Car
             setCarId();
             //setImaginaryObstacles(); // moved to car intersection
             //stopNodes(); // moved to car intersection
-            //for (int i = 2; i < 3; i++)
-            //{
-            //    if (currentGameObject == friends[i])
-            //    {
-            //        preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
-            //        Debug.Log("starting node is : " + graph.getNodeFromPoint(start_pos).i + " " + graph.getNodeFromPoint(start_pos).j);
-            //        Debug.Log("final destination is: " + goal_pos);
-            //        Debug.DrawLine(start_pos, goal_pos);
-            //    }
-            //}
+            for (int i = 19; i <21; i++)
+            {
+                if (currentGameObject == friends[i])
+                {
+                    preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+                    Debug.Log("starting node is : " + graph.getNodeFromPoint(start_pos).i + " " + graph.getNodeFromPoint(start_pos).j);
+                    Debug.Log("final destination is: " + goal_pos);
+                    Debug.DrawLine(start_pos, goal_pos);
+                }
+            }
 
-            preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
+            //preliminaryPath = PathFinder.findPath(graph, start_pos, goal_pos, (360 - transform.eulerAngles.y + 90) % 360);
             path = pathAdjustRightWall(preliminaryPath); 
             
 
@@ -264,46 +266,28 @@ namespace UnityStandardAssets.Vehicles.Car
 
             Node node = graph.getNodeFromPoint(transform.position);
             Debug.DrawLine(transform.position, graph.nodes[node.i + 2, node.j].worldPosition, Color.blue);
-            float k_p = 0.3f;
-            float k_d = 0.2f;
-            // keep track of target position and velocity
-            Vector3 target_position = path[nextWaypoint].worldPosition;
-            target_position[1] = 0.1f;
             Vector3 car_position = m_Car.transform.position;
-            target_velocity = (target_position - oldTargetPosition) / Time.fixedDeltaTime;
-            Vector3 car_velocity = (car_position - oldCarPosition) / Time.fixedDeltaTime;
-            oldTargetPosition = target_position;
-            oldCarPosition = car_position;
 
-            // a PD-controller to get desired velocity
-            Vector3 position_error = target_position - transform.position;
-            Vector3 velocity_error = target_velocity - car_velocity;
-            Vector3 correction_vector = k_p * position_error + k_d * velocity_error;
-
-            steering = Vector3.Dot(correction_vector, transform.right);
-            float forward_velocity = Vector3.Dot(correction_vector, transform.forward);
-
-
-
-            if (forward_velocity > 0)
+            // keep track of target position and velocity
+            
+            setAccelerationSteering(nextWaypoint);
+            if (had_hit)
             {
-                this.acceleration = 1f;
-                this.footbrake = 0f;
-                this.handbrake = 0f;
-            }
-            else
-            {
-                this.acceleration = 0f;
-                this.footbrake = -1f; // acceleration is clamped to 0,1. We reverse using the footbrake. 
-                this.handbrake = 0f;
-            }
+                this.steering = 0f; 
+                had_hit = false;
 
-            avoid_obstacles();
+            }
+            else 
+            {
+                avoid_obstacles();
+            }
+            
+
             
             m_Car.Move(steering, acceleration, footbrake, handbrake);
 
 
-            Debug.DrawLine(car_position, target_position, Color.white);
+            Debug.DrawLine(car_position, path[nextWaypoint].worldPosition, Color.white);
             //Debug.DrawLine(transform.position, transform.position + car_velocity, Color.blue);
             //Debug.DrawLine(transform.position, transform.position + desired_acceleration, Color.black);
 
@@ -311,14 +295,48 @@ namespace UnityStandardAssets.Vehicles.Car
             //Debug.Log("Steering:" + steering + " Acceleration:" + acceleration);
             //m_Car.Move(steering, acceleration, acceleration, 0f);
 
-            if (Vector3.Distance(car_position, target_position) < 4)
+            if (Vector3.Distance(car_position, path[nextWaypoint].worldPosition) < 9)
             {
                 nextWaypoint++;
             }
         }
         
-        public void setAccelerationSteering()
+
+        public void setAccelerationSteering(int waypointNumber)
         {
+            float k_p = 0.3f;
+            float k_d = 0.2f;
+
+
+            Vector3 target_position = path[waypointNumber].worldPosition;
+            target_position[1] = 0.1f;
+
+            Vector3 position_error = target_position - transform.position;
+
+            Vector3 car_position = m_Car.transform.position;
+
+
+            Vector3 car_velocity = (car_position - oldCarPosition) / Time.fixedDeltaTime;
+
+            Vector3 velocity_error = target_velocity - car_velocity;
+            oldCarPosition = car_position;
+
+            Vector3 correction_vector = k_p * position_error + k_d * velocity_error;
+
+            float forward_velocity = Vector3.Dot(correction_vector, transform.forward);
+            if (forward_velocity > 0)
+            {
+                this.acceleration = 1f;
+                this.footbrake = 0f; 
+            }
+            else
+            {
+                this.acceleration = 0f;
+                this.footbrake = -1f; // acceleration is clamped to 0,1. We reverse using the footbrake. 
+
+            }
+
+            steering = Vector3.Dot(correction_vector, transform.right);
 
         }
 
@@ -411,30 +429,83 @@ namespace UnityStandardAssets.Vehicles.Car
 
         private void avoid_obstacles()
         {
+            RaycastHit forward_hit;
+            RaycastHit backward_hit;
+            RaycastHit right_hit;
+            RaycastHit left_hit;
+            RaycastHit fr_hit;
+            RaycastHit fl_hit;
+            RaycastHit br_hit;
+            RaycastHit bl_hit;
+
             RaycastHit hit;
+
             Vector3 maxRange = carSize * 1.2f;
-            bool had_hit = false; // They haven't hit anything. 
             LayerMask onlyObstacles = ~(layerMask); // should give all layers except the one with the cars.
 
+            bool hit_forward = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out forward_hit, maxRange.z, onlyObstacles);
+            bool hit_back = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out backward_hit, maxRange.z, onlyObstacles);
+            bool hit_right = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.right), out right_hit, maxRange.z, onlyObstacles);
+            bool hit_left = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.left), out left_hit, maxRange.z, onlyObstacles);
+            bool hit_forward_right = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward + Vector3.right), out fr_hit, maxRange.z, onlyObstacles);
+            bool hit_forward_left = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward + Vector3.left), out fl_hit, maxRange.z, onlyObstacles);
+            bool hit_back_right = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back + Vector3.right), out br_hit, maxRange.z, onlyObstacles);
+            bool hit_back_left = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back + Vector3.left), out bl_hit, maxRange.z, onlyObstacles);
 
-            if (!had_hit_backward && Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out hit, maxRange.z, onlyObstacles))
+
+            if ((hit_forward) && (!hit_right) && (!hit_left))
             {
-                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * hit.distance;
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * forward_hit.distance;
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                this.acceleration *= 0.5f;
-                this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
-                Debug.Log("Frontal collision, distance: " + hit.distance);
-                Debug.Log("CarID; " + carId);
-                had_hit = true; // oops I hit something.
+                Debug.Log("Frontal collision, distance: " + forward_hit.distance + " CarId: " + carId);
+                //Debug.Log("CarID; " + carId);
 
-                if (hit.distance < 5) //recovery from frontal hit
+                if (forward_hit.distance > 5){
+                    //nextWaypoint++;
+                    //setAccelerationSteering(nextWaypoint);
+                    this.acceleration *= 0.5f;
+                    this.footbrake = this.footbrake < 0.1f ? 0.5f : this.footbrake * 2;
+                    Debug.Log("Slow down for car: " + carId);
+                }
+                else //recovery from frontal hit
                 {
+                    had_hit = true; // oops I hit something.
                     Debug.Log("Collision STOP: " + carId);
                     this.acceleration = 0;
-                    this.footbrake = -1;
-                    this.steering *= -1;
+                    this.footbrake = -1; // reverse the car
+                    if (this.steering < 0)
+                    {
+                        this.steering = 1;
+                    }
+                    else
+                    { 
+                        this.steering = -1;
+                    }
+                    //this.steering *= -1;
                     this.handbrake = 0;
                 }
+            }
+            if (hit_forward_right)
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward+Vector3.right) * fr_hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.footbrake = -1;
+                this.acceleration = 0;
+                this.steering = 1;
+
+                Debug.Log("Forward right collision");
+                had_hit = true;
+            }
+            if (hit_forward_left)
+            {
+                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward+Vector3.left) * fl_hit.distance;
+                Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
+                this.footbrake = -1;
+                this.acceleration = 0;
+                this.steering =-1;
+
+                Debug.Log("Forward left collision");
+                had_hit = true;
             }
 
             if (Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out hit, maxRange.z, onlyObstacles)) // The last time we used this THIS DID NOT WORK
@@ -501,6 +572,27 @@ namespace UnityStandardAssets.Vehicles.Car
                     carId = i;
                 }
             }
+        }
+
+        public int get_closest_node(Vector3 position, List<Node> path, int current_index)
+        {
+            //Debug.Log("Finding the closest node to " + position);
+            int closest = -1;
+            float distance = 1000000000;
+            position = new Vector3(position.x, 0, position.z);
+            int range = 10;
+            for (int i = (int)Mathf.Clamp(current_index - range, 0, path.Count); i < Math.Min(path.Count, current_index + 10); i++)
+            {
+                Vector3 to_compare = new Vector3(path[i].x_pos, 0, path[i].z_pos);
+                float new_distance = Vector3.Distance(position, to_compare);
+                if (new_distance <= distance)
+                {
+                    distance = new_distance;
+                    closest = i;
+                    //Debug.Log("Closest node at index i:" + i + " distance: " + distance + " and position " + path[i].worldPosition);
+                }
+            }
+            return closest;
         }
     }
 }

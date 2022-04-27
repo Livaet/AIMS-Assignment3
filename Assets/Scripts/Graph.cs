@@ -23,9 +23,11 @@ public class Graph
 
     public HashSet<GraphEdge> edges;
     public Node[,] nodes;
+    
 
     public static Graph instance;
 
+    
     public Graph(){
     }
     public Graph(int i_size, int j_size, float x_low, float x_high, float z_low, float z_high)
@@ -41,7 +43,7 @@ public class Graph
         this.edges = new HashSet<GraphEdge>();
         this.nodes = new Node[i_size, j_size];
         this.graphTraversabilityMatrix = new int[i_size, j_size];
-        
+
 
     }
 
@@ -250,6 +252,17 @@ public class Graph
 
             }
         }
+        //Here we would like to put the goal sphere to unwalkable 
+        /*Collider [] goal_spheres = terrain_manager_game_object.GetComponents<Collider>(); //change this to get all spheres 
+        foreach (Collider c in goal_spheres)
+        {
+            if (c.name == "Sphere")
+            {
+                Node goal_node = getNodeFromPoint(c.transform.position);
+                goal_node.walkable = false;
+                Debug.Log("Found a sphere");
+            }
+        }*/
 
         foreach(Node node in graph.nodes)
         {
