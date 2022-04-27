@@ -7,7 +7,7 @@ public class PathFinder : MonoBehaviour
 {
     public static float[,] headings = new float[,] { { 135f, 90f, 45f }, { 180f, 0f, 0f }, { 225f, 270f, 315f } };
 
-    public static List<Node> findPath(Graph graph, Vector3 start_position, Vector3 goal_position, float start_heading, bool drone = false)
+    public static List<Node> findPath(Graph graph, int carId, Vector3 start_position, Vector3 goal_position, float start_heading, bool drone = false)
     {
         Node start_node = graph.getNodeFromPoint(start_position);
         start_node.heading = start_heading;
@@ -20,6 +20,8 @@ public class PathFinder : MonoBehaviour
         open_set.Add(start_node);
         bool k = true;
         List<Node> path = new List<Node>();
+        Node[,] nodes = graph.allCarNodes[carId];
+
 
         while (open_set.Count > 0)
         {
@@ -68,10 +70,10 @@ public class PathFinder : MonoBehaviour
                                         previous_node.i, previous_node.j, back_1.i, back_1.j, back_2.i, back_2.j, back_3.i, back_3.j);
                                     //TODO COMMENT THIS!!!
                                     //Debug.Log(s);
-                                    Node first_interpol = graph.nodes[previous_node.i, back_1.j];
+                                    Node first_interpol = nodes[previous_node.i, back_1.j];
                                     first_interpol.parent = back_1;
                                     previous_node.parent = first_interpol;
-                                    Node second_interpol = graph.nodes[back_3.i, back_2.j];
+                                    Node second_interpol = nodes[back_3.i, back_2.j];
                                     second_interpol.parent = back_3;
                                     back_2.parent = second_interpol;
                                     
@@ -131,12 +133,13 @@ public class PathFinder : MonoBehaviour
 
             foreach(Node neighbour in current.neighbours)
             {
-                if (!neighbour.walkable || closed_set.Contains(neighbour))
+                //change this so if it's the end point it still gets managed.
+                if ((!neighbour.walkable && (neighbour != goal_node))|| closed_set.Contains(neighbour))
                     continue;
-                if(neighbour.i != current.i && neighbour.j != current.j )
+                if(neighbour.i != current.i && neighbour.j != current.j ) // if diagonal
                 {
-                    if (current.i < graph.nodes.GetLength(0) && current.j < graph.nodes.GetLength(1) && neighbour.i < graph.nodes.GetLength(0) && neighbour.j < graph.nodes.GetLength(1))
-                        if (!(graph.nodes[current.i, neighbour.j].walkable && graph.nodes[neighbour.i, current.j].walkable))
+                    if (current.i < nodes.GetLength(0) && current.j < nodes.GetLength(1) && neighbour.i < nodes.GetLength(0) && neighbour.j < nodes.GetLength(1)) //
+                        if (!(nodes[current.i, neighbour.j].walkable && nodes[neighbour.i, current.j].walkable))
                             
                             continue;
                 }

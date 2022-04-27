@@ -129,6 +129,21 @@ public class CarIntersection: MonoBehaviour
             }
         }
     }
+    public void setSphereToObstacle(Vector3 sphereLoc)
+    {
+        //SphereCollider [] goal_spheres = terrain_manager_game_object.GetComponents<SphereCollider>(); //change this to get all spheres 
+        //GameObject [] goal_spheres = GameObject.Find("Sphere");
+        //GameObject intersectionObject = GameObject.FindGameObjectsWithTag("Intersection")[0];
+
+            Node goal_node = graph.getNodeFromPoint(sphereLoc);
+        goal_node.walkable = false;
+            for (int k=0; k <50; k++)
+        {
+            graph.allCarNodes[k][goal_node.i, goal_node.j].walkable = false;
+        }
+        //goal_node.walkable = false;
+            Debug.Log("Found a sphere");
+    }
 
 }   
 

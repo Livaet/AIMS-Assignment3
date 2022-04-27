@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class Node
 {
@@ -77,7 +78,27 @@ public class Node
         return copy;
     }
 
- 
+    public Node clone()
+    {
+        Node copy = (Node) this.MemberwiseClone();
+        List<Node> copyNeighbors = neighbours.ToList();
+        copy.neighbours = copyNeighbors;
+
+        
+        copy.gCost = gCost;
+        copy.hCost = hCost;
+        copy.hybridAdditionalCost = hybridAdditionalCost;
+        copy.wallClosenessCost = wallClosenessCost;
+        copy.heading = heading;
+
+        if (parent != null)
+        {
+            Node copyParent = (Node)parent.MemberwiseClone();
+            copy.parent = copyParent;
+        }
+        return copy;
+    }
+
 
 }
 

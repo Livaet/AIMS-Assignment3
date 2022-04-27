@@ -17,13 +17,17 @@ public class Graph
     public Node goal_node;
     public List<Node> path;
     public List<Node> obstacleNodes = new List<Node>();
+    int numberOfCars = 50;
 
 
     public int[,] graphTraversabilityMatrix;
 
     public HashSet<GraphEdge> edges;
-    public Node[,] nodes;
-    
+    //public Node[,] nodes;
+    public Node[,] nodes; 
+    public Node[][,] allCarNodes; // first dimension is the carId, second dimension i and third j. 
+    public Node[,] newNodes;
+
 
     public static Graph instance;
 
@@ -43,6 +47,8 @@ public class Graph
         this.edges = new HashSet<GraphEdge>();
         this.nodes = new Node[i_size, j_size];
         this.graphTraversabilityMatrix = new int[i_size, j_size];
+        this.allCarNodes = new Node[numberOfCars][,];
+        this.newNodes = new Node[i_size, j_size];
 
 
     }
@@ -170,8 +176,6 @@ public class Graph
                 float z_center = terrainInfo.z_low + z_dim * (j + 0.5f);
                 Node node = new Node(i, j, x_center, z_center);
                 graph.nodes[i, j] = node;
-
-
                 int i_index = terrainInfo.get_i_index(x_center);
                 int j_index = terrainInfo.get_j_index(z_center);
                 Collider[] collision = Physics.OverlapSphere(new Vector3(x_center, 1, z_center), Math.Max(x_dim/2, z_dim/2));
@@ -269,6 +273,22 @@ public class Graph
             node.neighbours = graph.getNeighbours(node);
         }
         graph.createObstacleList();
+
+        
+
+        for (int k=0; k < numberOfCars; k++)
+        {
+
+            foreach(Node n in graph.nodes)
+            {
+                graph.newNodes[n.i, n.j] = n.clone();
+                
+            }
+
+//            Array.Copy(graph.nodes, graph.newNodes, graph.nodes.Length);
+            graph.allCarNodes[k] = graph.newNodes;
+        }
+        
         return graph;
     }
 
