@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
-
+using Panda; 
 
 
 [RequireComponent(typeof(DroneController))]
@@ -26,8 +26,11 @@ public class DroneAISoccer_blue : MonoBehaviour
     public float maxKickSpeed = 40f;
     public float lastKickTime = 0f;
 
+    PandaBehaviour myPandaBT;
+
     private void Start()
     {
+        myPandaBT = GetComponent<PandaBehaviour>();
         // get the car controller
         m_Drone = GetComponent<DroneController>();
         terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
@@ -77,7 +80,7 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 
 
-    private void FixedUpdate()
+    /*private void FixedUpdate()
     {
 
 
@@ -129,6 +132,13 @@ public class DroneAISoccer_blue : MonoBehaviour
             KickBall(maxKickSpeed * kickDirection);
         }
 
+    }
+    */
+
+    private void Update()
+    {
+        myPandaBT.Reset();
+        myPandaBT.Tick();
     }
 }
 
