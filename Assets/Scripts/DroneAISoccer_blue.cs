@@ -166,7 +166,14 @@ public class DroneAISoccer_blue : MonoBehaviour
     [Task]
     void Chase()
     {
-        Vector3 destination = ball.transform.position;
+        Vector3 direction = (ball.transform.position - other_goal.transform.position);
+
+        Vector3 directionNorm = direction.normalized;
+        float offset = direction.magnitude * 1.1f;
+        Vector3 destination = other_goal.transform.position + directionNorm * offset;
+        destination[1] = 0.1f;
+        Debug.DrawLine(transform.position, destination, Color.red);
+
         MoveDrone(destination);
     }
     [Task]
