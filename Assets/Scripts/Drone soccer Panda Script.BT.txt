@@ -1,0 +1,19 @@
+tree("Root")
+	tree("playball")
+
+tree("playball")
+	fallback
+		sequence
+			IsGoalie
+			Defend
+		sequence
+			IsForward
+			tree("FindBall")
+
+tree("FindBall")
+	fallback
+		sequence
+			IsBallCloserThan
+			Dribble
+		Intercept
+
