@@ -7,13 +7,22 @@ tree("playball")
 			IsGoalie
 			Defend
 		sequence
-			IsForward
-			tree("FindBall")
+			tree("FindBall") 
+			
 
 tree("FindBall")
 	fallback
 		sequence
-			IsBallCloserThan
+			not
+				IsBallBetweenUsAndGoal
+			GetBehindBall
+
+		sequence
+			IsBallCloserThan 15.0
+			IsBallCloseToGoal 40.0
+			Shoot
+		sequence
+			IsBallCloserThan 15.0
 			Dribble
-		Intercept
+		Chase
 
