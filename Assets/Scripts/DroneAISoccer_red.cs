@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using Panda;
+
 
 
 
@@ -25,6 +27,9 @@ public class DroneAISoccer_red : MonoBehaviour
     public float dist;
     public float maxKickSpeed = 40f;
     public float lastKickTime = 0f;
+
+    PandaBehaviour myPandaBT;
+
 
     private void Start()
     {
