@@ -30,11 +30,17 @@ public class DroneAISoccer_blue : MonoBehaviour
     PandaBehaviour myPandaBT;
 
     float shootVelocity;
+
+    float passVelocity; 
     float dribbleVelocity;
     bool stop = false; 
 
     float h_accel = 0f; 
     float v_accel = 0f; 
+
+    bool is_goalie = false; 
+    bool is_forward = false; 
+    bool is_midfield = false; 
 
     private void Start()
     {
@@ -57,8 +63,9 @@ public class DroneAISoccer_blue : MonoBehaviour
 
         ball = GameObject.FindGameObjectWithTag("Ball");
 
-        shootVelocity = 10f;
+        shootVelocity = 40f;
         dribbleVelocity = 5f;
+        passVelocity = 20f; 
 
         max_accel = m_Drone.max_acceleration;
     }
@@ -85,47 +92,108 @@ public class DroneAISoccer_blue : MonoBehaviour
     [Task]
     bool IsGoalie()
     {
-        GameObject goalie = friends[0]; 
+        return is_goalie; 
+        /*GameObject goalie = friends[0]; 
         float shortestDistance = Mathf.Infinity; 
         foreach (GameObject friend in friends)
         {
-            float distnaceToGoal = Vector3.Distance(own_goal.transform.position, friend.transform.position);
-            if (distnaceToGoal < shortestDistance)
+            float distanceToGoal = Vector3.Distance(own_goal.transform.position, friend.transform.position);
+            if (distanceToGoal < shortestDistance)
             {
                 goalie = friend; 
             }
         }
         if (goalie.transform.position == transform.position)
-        {
+        { 
             return true; 
         }
         else
         {
             return false; 
+        }*/
+    }
+
+    [Task]
+    bool IsNearGoal(float distance)
+    {
+        return ((transform.position - own_goal.transform.position).magnitude < distance);
+    }
+
+    [Task]
+    void MoveToGoal()
+    {
+        MoveDrone(own_goal.transform.position);
+        // get between the ball and the goal
+    }
+
+    [Task]
+    void PassBall()
+    {
+        GameObject nearest_friend = friends[0]; 
+        float shortestDistance = Mathf.Infinity; 
+        
+        foreach (GameObject friend in friends)
+        {
+            float distanceToFriend = Vector3.Distance(transform.position, friend.transform.position);
+            //do not want to pass ourselves 
+            if (distanceToFriend > 5f)
+            {
+                if (distanceToFriend < shortestDistance)
+                {
+                    nearest_friend = friend; 
+                }
+
+            }
+            else
+            {
+                nearest_friend = other_goal; //incase all friends are too close 
+            }
         }
+        Vector3 direction = new Vector3();
+        direction = (nearest_friend.transform.position - transform.position).normalized;
+        Vector3 pass = direction * passVelocity;
+        if (CanKick())
+        {
+            //Debug.Log("Passing");
+
+            KickBall(pass);
+        }
+    }
+
+    [Task]
+    void Defend()
+    {
+        //Moves the drone in z position only, in other words it stays in the goal and moves along it. 
+        Vector3 ball_position = ball.transform.position; // (x, y, z)
+        Vector3 current = transform.position; 
+        Vector3 new_goalie_position = new Vector3(current.x, current.y, ball_position.z);
+        MoveDrone(new_goalie_position); 
+
     }
 
     [Task]
     bool IsForward()
     {
-        GameObject forward = friends[0];
+        return is_forward; 
+        /*GameObject forward = friends[0];
         float shortestDistance = Mathf.Infinity;
         foreach (GameObject friend in friends)
         {
-            float distnaceToGoal = Vector3.Distance(other_goal.transform.position, friend.transform.position);
-            if (distnaceToGoal < shortestDistance)
+            float distanceToGoal = Vector3.Distance(other_goal.transform.position, friend.transform.position);
+            if (distanceToGoal < shortestDistance)
             {
                 forward = friend;
             }
         }
-        if (forward.transform.position == transform.position)
+        if (forward.transform.position == this.transform.position)
         {
+            Debug.Log("is forward");
             return true;
         }
         else
         {
             return false;
-        }
+        }*/
     }
 
     [Task]
@@ -136,18 +204,12 @@ public class DroneAISoccer_blue : MonoBehaviour
         Vector3 shoot = direction * shootVelocity;
         if (CanKick())
         {
-            Debug.Log("Shooting");
+            //Debug.Log("Shooting");
 
             KickBall(shoot);
         }
     }
 
-    [Task]
-    void Defend()
-    {
-        MoveDrone(own_goal.transform.position);
-        // get between the ball and the goal
-    }
 
     [Task]
     void Dribble()
@@ -158,7 +220,7 @@ public class DroneAISoccer_blue : MonoBehaviour
         direction = (other_goal.transform.position - transform.position).normalized;
         Vector3 dribble = direction * dribbleVelocity;
         if (CanKick()) {
-            Debug.Log("Dribbling");
+            //Debug.Log("Dribbling");
             KickBall(dribble);        
         }
     }
@@ -191,6 +253,22 @@ public class DroneAISoccer_blue : MonoBehaviour
         MoveDrone(destination);
     }
 
+    [Task]
+
+    bool IsMidfield()
+    {
+        return is_midfield; 
+    }
+
+    [Task]
+    void GoToCentre()
+    {
+        float center_x = (terrain_manager.myInfo.x_high + terrain_manager.myInfo.x_low) / 2.0f;
+        float center_z = (terrain_manager.myInfo.z_high + terrain_manager.myInfo.z_low) / 2.0f;
+        Vector3 center = new Vector3(center_x, 1f, center_z);
+        MoveDrone(center);
+    }
+
     private bool CanKick()
     {
         dist = (transform.position - ball.transform.position).magnitude;
@@ -206,7 +284,7 @@ public class DroneAISoccer_blue : MonoBehaviour
             Rigidbody rb = ball.GetComponent<Rigidbody>();
             rb.AddForce(velocity, ForceMode.VelocityChange);
             lastKickTime = Time.time;
-            print("ball was kicked ");
+            //print("ball was kicked ");
 
         }
 
@@ -227,7 +305,7 @@ public class DroneAISoccer_blue : MonoBehaviour
         float distance = Vector3.Distance(transform.position, destination);
 
         Vector3 directionToMove = (destination - transform.position).normalized;
-        Debug.Log("Dir to move: " + directionToMove);
+        //Debug.Log("Dir to move: " + directionToMove);
         
         if (distance > 10)
         {
@@ -242,6 +320,39 @@ public class DroneAISoccer_blue : MonoBehaviour
 
 
         m_Drone.Move(h_accel, v_accel);
+
+    }
+
+    private void SetPosition()
+    { 
+        int count_near = 0; 
+        float own_distance = Vector3.Distance(own_goal.transform.position, this.transform.position); 
+        foreach (GameObject friend in friends)
+        {
+            float friendToGoal = Vector3.Distance(own_goal.transform.position, friend.transform.position);
+            if (friendToGoal < own_distance)
+            {
+                count_near ++; //how many friends are closer to the goal than you?  
+            }
+        }
+        if (count_near == 0) //you are closest to goal 
+        {
+            is_goalie = true;
+            is_midfield = false; 
+            is_forward = false;  
+        }
+        else if (count_near == 1) //only one friend is closer to goal than you 
+        {
+            is_midfield = true; 
+            is_forward = false; 
+            is_goalie = false; 
+        }
+        else 
+        {
+            is_forward = true; 
+            is_goalie = false; 
+            is_midfield = false; 
+        }
 
     }
 
@@ -304,10 +415,12 @@ public class DroneAISoccer_blue : MonoBehaviour
     }
     */
 
-    private void Update()
+    void FixedUpdate()
     {
         myPandaBT.Reset();
         myPandaBT.Tick();
+        SetPosition();
     }
 }
+
 
