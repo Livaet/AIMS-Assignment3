@@ -22,6 +22,8 @@ public class DroneAISoccer_blue : MonoBehaviour
     public GameObject own_goal;
     public GameObject other_goal;
     public GameObject ball;
+    public GameObject ball_spawn_point;
+
 
     public float dist;
     public float maxKickSpeed = 40f;
@@ -36,10 +38,14 @@ public class DroneAISoccer_blue : MonoBehaviour
     bool stop = false; 
 
     float h_accel = 0f; 
-    float v_accel = 0f; 
+    float v_accel = 0f;
 
-    bool is_goalie = false; 
-    bool is_forward = false; 
+
+    static bool goalie_set = false;
+    bool is_goalie = false;
+    static bool forward_set = false;
+    bool is_forward = false;
+    static bool midfield_set = false;
     bool is_midfield = false; 
 
     private void Start()
@@ -68,6 +74,8 @@ public class DroneAISoccer_blue : MonoBehaviour
         passVelocity = 20f; 
 
         max_accel = m_Drone.max_acceleration;
+        ball_spawn_point = ball.GetComponent<GoalCheck>().ball_spawn_point;
+        
     }
 
     [Task]
@@ -111,6 +119,13 @@ public class DroneAISoccer_blue : MonoBehaviour
         {
             return false; 
         }*/
+    }
+    [Task]
+
+    bool IsBallOutOfBounds()
+    {
+        float out_of_bounds = 150f; //taken from GoalCheck
+        return ((transform.position - ball_spawn_point.transform.position).magnitude > out_of_bounds);
     }
 
     [Task]
@@ -335,23 +350,26 @@ public class DroneAISoccer_blue : MonoBehaviour
                 count_near ++; //how many friends are closer to the goal than you?  
             }
         }
-        if (count_near == 0) //you are closest to goal 
+        if ((count_near == 0) && (goalie_set == false)) //you are closest to goal 
         {
             is_goalie = true;
-            is_midfield = false; 
-            is_forward = false;  
+            is_midfield = false;
+            is_forward = false;
+            goalie_set = true;
         }
-        else if (count_near == 1) //only one friend is closer to goal than you 
+        else if ((count_near == 1) && (midfield_set == false))//only one friend is closer to goal than you 
         {
             is_midfield = true; 
             is_forward = false; 
-            is_goalie = false; 
+            is_goalie = false;
+            midfield_set = true;
         }
-        else 
+        else if (forward_set == false)
         {
             is_forward = true; 
             is_goalie = false; 
-            is_midfield = false; 
+            is_midfield = false;
+            forward_set = true;
         }
 
     }
@@ -419,7 +437,7 @@ public class DroneAISoccer_blue : MonoBehaviour
     {
         myPandaBT.Reset();
         myPandaBT.Tick();
-        SetPosition();
+        SetPosition(); // this currently only sets the position once. to set it more often, set the flags goalie_set, forward_set and midfield_set to false and it will review them. 
     }
 }
 
