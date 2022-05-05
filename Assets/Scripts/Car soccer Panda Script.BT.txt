@@ -1,0 +1,79 @@
+﻿tree("Root")
+	tree("playball")
+
+tree("playball")
+	fallback
+		sequence
+			IsGoalie
+			tree("Goalie")
+			BeGoalie
+		sequence
+			IsMidfield
+			tree("Midfield")
+		sequence
+			IsForward
+			tree("Forward")
+tree("Goalie")
+	fallback
+		sequence
+			not
+				IsNearGoal 10.0
+			MoveToGoal
+		sequence
+			IsBallCloserThan 15.0
+			Shoot
+			IsBallCloserThan 15.0
+			PassBall
+		BeGoalie
+
+tree("Midfield")
+	fallback
+		sequence
+			IsBallOutOfBounds
+			GoToCentre
+		sequence
+			IsItOnOurSideOfThePitch
+			GetBehindBallMidfield
+			Shoot
+		sequence
+			not
+				IsBallBetweenUsAndGoal
+			GetBehindBallMidfield
+		sequence
+			IsBallCloserThan 15.0
+			IsBallCloseToGoal 40.0
+			SafeToShoot
+			Shoot
+		sequence
+			IsBallCloserThan 15.0
+			SafeToPass
+			PassBall
+		sequence
+			IsBallCloserThan 15.0
+			Dribble
+		ChaseMidfield
+tree("Forward")
+	fallback
+		sequence
+			IsItOnOurSideOfThePitch
+			GetBehindBallForward
+			Shoot
+		sequence
+			not
+				IsBallBetweenUsAndGoal
+			GetBehindBallForward
+		sequence
+			IsBallCloserThan 15.0
+			IsBallCloseToGoal 40.0
+			SafeToShoot
+			Shoot
+		sequence
+			IsBallCloserThan 15.0
+			SafeToPass
+			PassBall
+		sequence
+			IsBallCloserThan 15.0
+			Dribble
+		ChaseForward
+
+			
