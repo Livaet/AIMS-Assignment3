@@ -470,6 +470,8 @@ public class DroneAISoccer_blue : MonoBehaviour
     {
         myPandaBT.Reset();
         myPandaBT.Tick();
+        forward_set = false;
+        midfield_set = false;
         //SetPosition();
         setNewRoles();
     }

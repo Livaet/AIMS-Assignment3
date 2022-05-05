@@ -42,16 +42,14 @@ tree("Midfield")
 					IsBallBetweenUsAndGoal
 					ChaseForward
 					Shoot
-				sequence
-					GetBehindBallMidfield
-					Shoot
+				DefendBallMidfield
 		sequence
 			not
 				IsBallBetweenUsAndGoal
 			GetBehindBallMidfield
 		sequence
 			IsBallCloserThan 15.0
-			IsBallCloseToGoal 40.0
+			IsBallCloseToGoal 90.0
 			Shoot
 		sequence
 			IsBallCloserThan 15.0
@@ -86,7 +84,7 @@ tree("Forward")
 			PassBall
 		sequence
 			IsBallCloserThan 15.0
-			IsBallCloseToGoal 40.0
+			IsBallCloseToGoal 90.0
 			Shoot
 		sequence
 			IsBallCloserThan 15.0

@@ -53,6 +53,9 @@ namespace UnityStandardAssets.Vehicles.Car
         static bool midfield_set = false;
         bool is_midfield = false;
 
+        public static Rigidbody rb;
+        
+
         private void Start()
         {
             // get the car controller
@@ -60,7 +63,7 @@ namespace UnityStandardAssets.Vehicles.Car
             terrain_manager = terrain_manager_game_object.GetComponent<TerrainManager>();
             myPandaBT = GetComponent<PandaBehaviour>();
 
-
+            rb = GetComponent<Rigidbody>();
 
             friend_tag = gameObject.tag;
             if (friend_tag == "Blue")
@@ -88,11 +91,22 @@ namespace UnityStandardAssets.Vehicles.Car
             startPositions();
 
         }
+
+        static float angularVelocity { get { return rb.angularVelocity.magnitude; } }
+        private static float velocity { get { return rb.velocity.magnitude * 2.23693629f; } }
+        public static float turningRadius { get { return velocity / angularVelocity; } }
+
         [Task]
         bool IsBallOutOfBounds()
         {
-            float out_of_bounds = 100f; //taken from GoalCheck
-            return ((transform.position - ball_spawn_point.transform.position).magnitude > out_of_bounds);
+            RaycastHit hit;
+            LayerMask cubes = 1 << 9;
+            float maxDist = Vector3.Distance(transform.position, ball.transform.position);
+            if (Physics.Raycast(transform.position, ball.transform.position-transform.position, out hit,maxDist, cubes))
+            {
+                return true; 
+            }
+            else { return false; }
         }
         [Task]
 
@@ -187,14 +201,15 @@ namespace UnityStandardAssets.Vehicles.Car
         {
             Vector3 direction = new Vector3();
 
-            Vector3 goalsize = other_goal.GetComponent<BoxCollider>().size;
-            goalsize[0] = 0f;
-            goalsize[1] = 0f;
+            Vector3 goalsize = new Vector3(0f,0f,30f);
+            
+            //goalsize[0] = 0f;
+            //goalsize[1] = 0f;
             if (!Physics.Linecast(transform.position, other_goal.transform.position)) {
                 direction = (other_goal.transform.position - transform.position).normalized;
 
             }
-            else if (!Physics.Linecast(transform.position, other_goal.transform.position + goalsize/2))
+            else if (!Physics.Linecast(transform.position, other_goal.transform.position + goalsize / 2))
             {
                 direction = ((other_goal.transform.position + goalsize/2) - transform.position).normalized;
 
@@ -211,9 +226,27 @@ namespace UnityStandardAssets.Vehicles.Car
 
                 KickBall(shoot);
             }
+            else
+            {
+                MoveCar(ball.transform.position);
+            }
         }
 
+        [Task]
+        void DefendBallMidfield()
+        {
 
+            Vector3 direction = (ball.transform.position - own_goal.transform.position);
+
+            Vector3 directionNorm = direction.normalized;
+            float offset = direction.magnitude * 0.5f;
+            Vector3 destination = own_goal.transform.position + directionNorm * offset;
+
+
+            Debug.DrawLine(transform.position, destination, Color.cyan);
+
+            MoveCar(destination);
+        }
         void assignPositions()
         {
                 int count_near = 0;
@@ -398,11 +431,24 @@ namespace UnityStandardAssets.Vehicles.Car
         [Task]
         void ChaseMidfield()
         {
+            Vector3 goal = own_goal.transform.position;
             Vector3 direction = (ball.transform.position - other_goal.transform.position);
-
             Vector3 directionNorm = direction.normalized;
             float offset = direction.magnitude * 1.1f;
-            Vector3 destination = other_goal.transform.position + directionNorm * offset + Vector3.up;
+            Vector3 destination;
+
+
+            if (own_goal.transform.position.z < ball.transform.position.z) //ball is on top side of court 
+            {
+                destination = other_goal.transform.position + directionNorm * offset + Vector3.back*10;
+            }
+            else
+            {
+                // ball is on bottom side of court
+                destination = other_goal.transform.position + directionNorm * offset + Vector3.forward*10; 
+                
+            }
+
             destination[1] = 0.1f;
             Debug.DrawLine(transform.position, destination, Color.cyan);
 
@@ -414,7 +460,7 @@ namespace UnityStandardAssets.Vehicles.Car
             Vector3 direction = (ball.transform.position - other_goal.transform.position);
 
             Vector3 directionNorm = direction.normalized;
-            float offset = direction.magnitude * 1.1f;
+            float offset = direction.magnitude * 1.05f;
             Vector3 destination = other_goal.transform.position + directionNorm * offset;
             destination[1] = 0.1f;
             Debug.DrawLine(transform.position, destination, Color.green);
@@ -443,7 +489,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             Vector3 directionNorm = direction.normalized;
             float offset = direction.magnitude * 1.2f;
-            Vector3 destination = other_goal.transform.position + directionNorm * offset + Vector3.left*3;
+            Vector3 destination = other_goal.transform.position + directionNorm * offset + Vector3.back*10;
             destination[1] = 0.1f;
             Debug.DrawLine(transform.position, destination, Color.red);
             MoveCar(destination + Vector3.left + Vector3.back);
@@ -556,7 +602,7 @@ namespace UnityStandardAssets.Vehicles.Car
             //LayerMask onlyObstacles = ~(layerMask); // should give all layers except the one with the cars.
             LayerMask cubes = 1 << 9;
             LayerMask otherCars = 1 << 6;
-            LayerMask onlyObstacles = cubes;
+            LayerMask onlyObstacles = cubes;// | otherCars;
 
             bool hit_forward = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out forward_hit, maxRange.z, onlyObstacles);
             bool hit_back = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out backward_hit, maxRange.z, onlyObstacles);
@@ -567,34 +613,37 @@ namespace UnityStandardAssets.Vehicles.Car
             bool hit_back_right = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back + Vector3.right), out br_hit, maxRange.z, onlyObstacles);
             bool hit_back_left = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back + Vector3.left), out bl_hit, maxRange.z, onlyObstacles);
 
-            if ((hit_forward) ||  (hit_forward_right) || (hit_forward_left)) 
-            {
-                if (!hit_left)
-                {
-                    steering = 1f;
-                }
-                else if (!hit_right)
-                {
-                    steering = -1f;
-                }
-                Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * forward_hit.distance;
-                Vector3 closestObstacleInFront2 = transform.TransformDirection(Vector3.forward + Vector3.right) * fr_hit.distance;
-                Vector3 closestObstacleInFront3 = transform.TransformDirection(Vector3.forward + Vector3.left) * fl_hit.distance;
-                
-                if (hit_forward) { Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow); }
-                if (hit_forward_right) { Debug.DrawRay(transform.position, closestObstacleInFront2, Color.yellow); }
-                if (hit_forward_left) { Debug.DrawRay(transform.position, closestObstacleInFront3, Color.yellow); }
+            Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward) * forward_hit.distance;
+            Vector3 closestObstacleInFront2 = transform.TransformDirection(Vector3.forward + Vector3.right) * fr_hit.distance;
+            Vector3 closestObstacleInFront3 = transform.TransformDirection(Vector3.forward + Vector3.left) * fl_hit.distance;
 
+            if (hit_forward) { Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);}
+            if (hit_forward_right) { Debug.DrawRay(transform.position, closestObstacleInFront2, Color.yellow); }
+            if (hit_forward_left) { Debug.DrawRay(transform.position, closestObstacleInFront3, Color.yellow); }
+
+            if ((hit_forward) &&  (hit_forward_right) && (hit_forward_left)) 
+            {
+                steering = 0; 
                 acceleration = 0f;
                 footbrake = -1f;
                 handbrake = 0f;
-                collision=true; }
+                collision = true;
+            }
+            if ((hit_back) && (hit_back_right) && (hit_back_left))
+            {
+                steering = 0;
+                acceleration = 1f;
+                footbrake = 0f;
+                handbrake = 0f;
+                collision = true;
+            }
             else if ((hit_forward_right) && (hit_back_right) && (!hit_forward))
             {
                 acceleration = 1f;
                 steering = -1f;
                 footbrake = 0f;
                 handbrake = 0f;
+                collision = true;
             }
             else if ((hit_forward_left) && (hit_back_left) && (!hit_forward))
             {
@@ -602,24 +651,75 @@ namespace UnityStandardAssets.Vehicles.Car
                 steering = 1f;
                 footbrake = 0f;
                 handbrake = 0f;
+                collision = true;
             }
-            else if ((hit_back) || (hit_back_right) || (hit_back_left)) {
-
-                if (!hit_left)
-                {
-                    steering = -1f;
-                }
-                else if (!hit_right)
-                {
-                    steering = 1f;
-                }
-                
-                acceleration = 1f;
+            else if ((hit_forward) && (hit_forward_right)) //automatically !hit_forward_left, see case above
+            {
+                acceleration = 0f;
+                steering = 1f;
+                footbrake = -1f;
                 handbrake = 0f;
-                footbrake = 0f;
-                collision=true; 
-            
+                collision = true;
             }
+            else if ((hit_forward) && (hit_forward_left)) //automatically !hit_forward_right, see case above
+            {
+                acceleration = 0f;
+                steering = -1f;
+                footbrake = -1f;
+                handbrake = 0f;
+                collision = true;
+            }
+            else if ((hit_back) && (hit_back_right))
+            {
+                acceleration = 1f;
+                steering = -1f;
+                footbrake = 0f;
+                handbrake = 0f;
+                collision = true;
+            }
+            else if ((hit_back) && (hit_back_left))
+            {
+                acceleration = 1f;
+                steering = 1f;
+                footbrake = 0f;
+                handbrake = 0f;
+                collision = true;
+            }
+
+            //else if ((hit_forward) || (hit_forward_right) || (hit_forward_left))
+            //{
+            //    if (!hit_left)
+            //    {
+            //        steering = 1f;
+            //    }
+            //    else if (!hit_right)
+            //    {
+            //        steering = -1f;
+            //    }
+
+
+            //    acceleration = 0f;
+            //    footbrake = -1f;
+            //    handbrake = 0f;
+            //    collision = true;
+            //}
+            //else if ((hit_back) || (hit_back_right) || (hit_back_left)) {
+
+            //    if (!hit_left)
+            //    {
+            //        steering = -1f;
+            //    }
+            //    else if (!hit_right)
+            //    {
+            //        steering = 1f;
+            //    }
+                
+            //    acceleration = 1f;
+            //    handbrake = 0f;
+            //    footbrake = 0f;
+            //    collision=true; 
+            
+            //}
             else if ((hit_left))
             {
                 acceleration = -acceleration;
@@ -643,6 +743,70 @@ namespace UnityStandardAssets.Vehicles.Car
                 handbrake = 0f;
                 footbrake = 0f;
 
+                collision = true;
+            }
+            else if (hit_forward)
+            {
+                if (!hit_left)
+                {
+                    steering = 1f;
+                }
+                else if (!hit_right)
+                {
+                    steering = -1f;
+                }
+
+                acceleration = 0f;
+                footbrake = -1f;
+                handbrake = 0f;
+                collision = true;
+            }
+            else if (hit_forward_left)
+            {
+                steering = 1f;
+                acceleration = 1f; 
+                footbrake = 0f; 
+                handbrake = 0f;
+                collision = true;
+            }
+            else if (hit_forward_right)
+            {
+                steering = -1f;
+                acceleration = 1f; 
+                footbrake = 0f; 
+                handbrake = 0f; 
+                collision = true;
+            }
+            else if (hit_back)
+            {
+                if (!hit_left)
+                {
+                    steering = 1f;
+                }
+                else if (!hit_right)
+                {
+                    steering = -1f;
+                }
+
+                acceleration = 1f;
+                footbrake = 0f;
+                handbrake = 0f;
+                collision = true;
+            }
+            else if (hit_back_left)
+            {
+                steering = 1f;
+                acceleration = 1f; 
+                footbrake = 0f; 
+                handbrake = 0f;
+                collision = true;
+            }
+            else if (hit_back_right)
+            {
+                steering = -1f;
+                acceleration = 1f; 
+                footbrake = 0f; 
+                handbrake = 0f;
                 collision = true;
             }
             else
@@ -705,7 +869,7 @@ namespace UnityStandardAssets.Vehicles.Car
                     Vector3 correction_vector = k_p * position_error + k_d * velocity_error;
 
                     float forward_velocity = Vector3.Dot(correction_vector, transform.forward);
-                    if (forward_velocity > 0)
+                    if ((forward_velocity > 0))// && (distance > turningRadius))
                     {
                         this.acceleration = 1f;
                         this.footbrake = 0f;
@@ -739,18 +903,19 @@ namespace UnityStandardAssets.Vehicles.Car
 
             m_Car.Move(steering, acceleration, footbrake, handbrake);
 
-            if (m_Car.CurrentSpeed < 0.1f)
-            {
-                Debug.Log("I think I'm stuck. I'll just go forward");
-                m_Car.Move(0f, 1f, 0f, 0f);
-            }
-            if (m_Car.CurrentSpeed < 0.1f)
-            {
-                Debug.Log("I think I'm still stuck, I'll try backward");
-                m_Car.Move(0f,0f,-1f,0f);
-            }
+            //if (Mathf.Abs(m_Car.CurrentSpeed) < 0.1f)
+            //{
+            //    Debug.Log("I think I'm stuck. I'll just go forward");
+            //    m_Car.Move(0f, 1f, 0f, 0f);
+            //}
+            //if (Mathf.Abs(m_Car.CurrentSpeed) < 0.1f)
+            //{
+            //    Debug.Log("I think I'm still stuck, I'll try backward");
+            //    m_Car.Move(0f,0f,-1f,0f);
+            //}
         }
 
+        
 
         private void Update()
         {
