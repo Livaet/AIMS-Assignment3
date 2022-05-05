@@ -64,7 +64,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
         //debug helpers
         bool debugOn = true;
-        int debugThisCarId = 19;
+        int debugThisCarId = 20;
 
 
         //Obstacle avoidance helpers
@@ -167,7 +167,8 @@ namespace UnityStandardAssets.Vehicles.Car
             //    }
             //}
             
-            CarInFront();
+            //CarInFront();
+            carInFront = false;
             if (!carInFront)
             {
                 if (nextWaypoint < path.Count)
@@ -286,6 +287,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 
 
             }
+            acceleration = Mathf.Clamp(acceleration, 0f, 0.5f);
             m_Car.Move(steering, acceleration, footbrake, handbrake);
             //if (had_hit)
             //{
@@ -455,7 +457,8 @@ namespace UnityStandardAssets.Vehicles.Car
             RaycastHit hit;
 
             Vector3 maxRange = carSize * 1.2f;
-            LayerMask onlyObstacles = ~(layerMask); // should give all layers except the one with the cars.
+            //LayerMask onlyObstacles = ~(layerMask); // should give all layers except the one with the cars.
+            LayerMask onlyObstacles = Physics.AllLayers;
 
             bool hit_forward = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.forward), out forward_hit, maxRange.z, onlyObstacles);
             bool hit_back = Physics.Raycast(transform.position + transform.up, transform.TransformDirection(Vector3.back), out backward_hit, maxRange.z, onlyObstacles);
@@ -473,7 +476,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
                 Debug.Log("Hit forward only. Frontal collision, distance: " + forward_hit.distance + " CarId: " + carId);
 
-                if (forward_hit.distance > 4){
+                if (forward_hit.distance > 5){
                    //this.acceleration *= 0.5f;
                    if (Mathf.Abs(this.steering) < 0.1) {
                         this.steering = this.steering * 100f; 
@@ -505,12 +508,12 @@ namespace UnityStandardAssets.Vehicles.Car
             }
             else if (hit_forward_right)
             {
-                if (fr_hit.distance > 3)
+                if (fr_hit.distance > 3.5)
                 {
                     this.steering = -1f;
                     Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward+Vector3.right) * fr_hit.distance;
                     Debug.DrawRay(transform.position, closestObstacleInFront, Color.yellow);
-                    Debug.Log("Forward right hit distance > 3. CarId: " + carId);
+                    Debug.Log("Forward right hit distance > 3. Distance: " + fr_hit.distance + " CarId: " + carId);
                 }
                 else
                 {
@@ -529,7 +532,7 @@ namespace UnityStandardAssets.Vehicles.Car
             }
             else if (hit_forward_left)
             {
-                if (fl_hit.distance > 3)
+                if (fl_hit.distance > 3.5)
                 {
                     this.steering = 1f;
                     Vector3 closestObstacleInFront = transform.TransformDirection(Vector3.forward + Vector3.left) * fl_hit.distance;
