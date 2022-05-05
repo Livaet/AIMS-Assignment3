@@ -186,7 +186,24 @@ namespace UnityStandardAssets.Vehicles.Car
         void Shoot()
         {
             Vector3 direction = new Vector3();
-            direction = (other_goal.transform.position - transform.position).normalized;
+
+            Vector3 goalsize = other_goal.GetComponent<BoxCollider>().size;
+            goalsize[0] = 0f;
+            goalsize[1] = 0f;
+            if (!Physics.Linecast(transform.position, other_goal.transform.position)) {
+                direction = (other_goal.transform.position - transform.position).normalized;
+
+            }
+            else if (!Physics.Linecast(transform.position, other_goal.transform.position + goalsize/2))
+            {
+                direction = ((other_goal.transform.position + goalsize/2) - transform.position).normalized;
+
+            }
+            else
+            {
+                direction = ((other_goal.transform.position - goalsize / 2) - transform.position).normalized;
+
+            }
             Vector3 shoot = direction * shootVelocity;
             if (CanKick())
             {
@@ -319,6 +336,10 @@ namespace UnityStandardAssets.Vehicles.Car
             {
                 return false;
             }
+            if ((transform.position-other_goal.transform.position).magnitude < (nearest_friend.transform.position - other_goal.transform.position).magnitude) //don't pass backward
+            {
+                return false;
+            }
             else { return true; }
         }
 
@@ -371,6 +392,7 @@ namespace UnityStandardAssets.Vehicles.Car
                 Debug.Log("Dribbling");
                 KickBall(dribble);
             }
+            MoveCar(ball.transform.position);
         }
 
         [Task]
@@ -721,6 +743,11 @@ namespace UnityStandardAssets.Vehicles.Car
             {
                 Debug.Log("I think I'm stuck. I'll just go forward");
                 m_Car.Move(0f, 1f, 0f, 0f);
+            }
+            if (m_Car.CurrentSpeed < 0.1f)
+            {
+                Debug.Log("I think I'm still stuck, I'll try backward");
+                m_Car.Move(0f,0f,-1f,0f);
             }
         }
 

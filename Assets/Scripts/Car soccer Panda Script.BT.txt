@@ -33,8 +33,13 @@ tree("Midfield")
 			GoToCentre
 		sequence
 			IsItOnOurSideOfThePitch
-			GetBehindBallMidfield
-			Shoot
+			fallback
+				sequence
+					IsBallBetweenUsAndGoal
+					Shoot
+				sequence
+					GetBehindBallMidfield
+					Shoot
 		sequence
 			not
 				IsBallBetweenUsAndGoal
@@ -42,7 +47,6 @@ tree("Midfield")
 		sequence
 			IsBallCloserThan 15.0
 			IsBallCloseToGoal 40.0
-			SafeToShoot
 			Shoot
 		sequence
 			IsBallCloserThan 15.0
@@ -56,16 +60,23 @@ tree("Forward")
 	fallback
 		sequence
 			IsItOnOurSideOfThePitch
-			GetBehindBallForward
-			Shoot
+			fallback
+				sequence
+					IsBallBetweenUsAndGoal
+					Shoot
+				sequence
+					GetBehindBallForward
+					Shoot
 		sequence
 			not
 				IsBallBetweenUsAndGoal
 			GetBehindBallForward
+			IsBallCloserThan 15.0
+			SafeToPass
+			PassBall
 		sequence
 			IsBallCloserThan 15.0
 			IsBallCloseToGoal 40.0
-			SafeToShoot
 			Shoot
 		sequence
 			IsBallCloserThan 15.0
