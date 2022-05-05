@@ -91,7 +91,7 @@ namespace UnityStandardAssets.Vehicles.Car
         [Task]
         bool IsBallOutOfBounds()
         {
-            float out_of_bounds = 150f; //taken from GoalCheck
+            float out_of_bounds = 100f; //taken from GoalCheck
             return ((transform.position - ball_spawn_point.transform.position).magnitude > out_of_bounds);
         }
         [Task]
@@ -253,7 +253,7 @@ namespace UnityStandardAssets.Vehicles.Car
         [Task]
         void MoveToGoal()
         {
-            MoveCar(own_goal.transform.position);
+            MoveCar(own_goal.transform.position+Vector3.right);
             // get between the ball and the goal
         }
 
@@ -262,7 +262,7 @@ namespace UnityStandardAssets.Vehicles.Car
         {
             if (is_goalie)
             {
-                MoveCar(own_goal.transform.position);
+                MoveCar(own_goal.transform.position + Vector3.right);
             }
             else if (is_midfield)
             {
@@ -443,7 +443,7 @@ namespace UnityStandardAssets.Vehicles.Car
 
             Vector3 directionNorm = direction.normalized;
             float offset = direction.magnitude * 1.2f;
-            Vector3 destination = other_goal.transform.position + directionNorm * offset ;
+            Vector3 destination = other_goal.transform.position + directionNorm * offset + Vector3.left*3;
             destination[1] = 0.1f;
             Debug.DrawLine(transform.position, destination, Color.red);
             MoveCar(destination + Vector3.left + Vector3.back);

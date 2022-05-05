@@ -36,6 +36,11 @@ tree("Midfield")
 			fallback
 				sequence
 					IsBallBetweenUsAndGoal
+					IsBallCloserThan 15.0
+					Shoot
+				sequence
+					IsBallBetweenUsAndGoal
+					ChaseForward
 					Shoot
 				sequence
 					GetBehindBallMidfield
@@ -63,6 +68,11 @@ tree("Forward")
 			fallback
 				sequence
 					IsBallBetweenUsAndGoal
+					IsBallCloserThan 15.0
+					Shoot
+				sequence
+					IsBallBetweenUsAndGoal
+					ChaseForward
 					Shoot
 				sequence
 					GetBehindBallForward
