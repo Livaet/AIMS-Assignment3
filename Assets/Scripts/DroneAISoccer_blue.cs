@@ -22,8 +22,6 @@ public class DroneAISoccer_blue : MonoBehaviour
     public GameObject own_goal;
     public GameObject other_goal;
     public GameObject ball;
-    public GameObject ball_spawn_point;
-
 
     public float dist;
     public float maxKickSpeed = 40f;
@@ -38,15 +36,15 @@ public class DroneAISoccer_blue : MonoBehaviour
     bool stop = false; 
 
     float h_accel = 0f; 
-    float v_accel = 0f;
+    float v_accel = 0f; 
 
-
-    static bool goalie_set = false;
-    bool is_goalie = false;
-    static bool forward_set = false;
-    bool is_forward = false;
-    static bool midfield_set = false;
+    bool is_goalie = false; 
+    bool is_forward = false; 
     bool is_midfield = false; 
+
+    static bool forward_set = false;
+    static bool midfield_set = false;
+    static bool goalie_set = false;
 
     private void Start()
     {
@@ -74,8 +72,8 @@ public class DroneAISoccer_blue : MonoBehaviour
         passVelocity = 20f; 
 
         max_accel = m_Drone.max_acceleration;
-        ball_spawn_point = ball.GetComponent<GoalCheck>().ball_spawn_point;
-        
+
+        SetPosition();
     }
 
     [Task]
@@ -120,13 +118,6 @@ public class DroneAISoccer_blue : MonoBehaviour
             return false; 
         }*/
     }
-    [Task]
-
-    bool IsBallOutOfBounds()
-    {
-        float out_of_bounds = 150f; //taken from GoalCheck
-        return ((transform.position - ball_spawn_point.transform.position).magnitude > out_of_bounds);
-    }
 
     [Task]
     bool IsNearGoal(float distance)
@@ -137,6 +128,8 @@ public class DroneAISoccer_blue : MonoBehaviour
     [Task]
     void MoveToGoal()
     {
+        Vector3 goaliePos = own_goal.transform.position;
+        goaliePos.x = goaliePos.x + 1f; 
         MoveDrone(own_goal.transform.position);
         // get between the ball and the goal
     }
@@ -243,13 +236,15 @@ public class DroneAISoccer_blue : MonoBehaviour
     [Task]
     void Chase()
     {
-        Vector3 direction = (ball.transform.position - other_goal.transform.position);
+        /*Vector3 direction = (ball.transform.position - other_goal.transform.position);
 
         Vector3 directionNorm = direction.normalized;
         float offset = direction.magnitude * 1.1f;
         Vector3 destination = other_goal.transform.position + directionNorm * offset;
         destination[1] = 0.1f;
-        Debug.DrawLine(transform.position, destination, Color.red);
+        Debug.DrawLine(transform.position, destination, Color.red);*/
+
+        Vector3 destination = ball.transform.position; 
 
         MoveDrone(destination);
     }
@@ -280,7 +275,7 @@ public class DroneAISoccer_blue : MonoBehaviour
     {
         float center_x = (terrain_manager.myInfo.x_high + terrain_manager.myInfo.x_low) / 2.0f;
         float center_z = (terrain_manager.myInfo.z_high + terrain_manager.myInfo.z_low) / 2.0f;
-        Vector3 center = new Vector3(center_x, 1f, center_z);
+        Vector3 center = new Vector3(center_x - 2f, 1f, center_z);
         MoveDrone(center);
     }
 
@@ -340,14 +335,14 @@ public class DroneAISoccer_blue : MonoBehaviour
 
     private void SetPosition()
     { 
-        int count_near = 0; 
-        float own_distance = Vector3.Distance(own_goal.transform.position, this.transform.position); 
+        int count_near = 0;
+        float own_distance = Vector3.Distance(own_goal.transform.position, this.transform.position);
         foreach (GameObject friend in friends)
         {
             float friendToGoal = Vector3.Distance(own_goal.transform.position, friend.transform.position);
             if (friendToGoal < own_distance)
             {
-                count_near ++; //how many friends are closer to the goal than you?  
+                count_near++; //how many friends are closer to the goal than you?  
             }
         }
         if ((count_near == 0) && (goalie_set == false)) //you are closest to goal 
@@ -357,21 +352,59 @@ public class DroneAISoccer_blue : MonoBehaviour
             is_forward = false;
             goalie_set = true;
         }
-        else if ((count_near == 1) && (midfield_set == false))//only one friend is closer to goal than you 
+        else if ((midfield_set == false))//only one friend is closer to goal than you 
         {
-            is_midfield = true; 
-            is_forward = false; 
-            is_goalie = false;
             midfield_set = true;
+            is_midfield = true;
+            is_forward = false;
+            is_goalie = false;
         }
         else if (forward_set == false)
         {
-            is_forward = true; 
-            is_goalie = false; 
-            is_midfield = false;
             forward_set = true;
+            is_forward = true;
+            is_goalie = false;
+            is_midfield = false;
         }
 
+    }
+
+    private void setNewRoles()
+    {
+        DroneAISoccer_blue forwardFriend = friends[0].GetComponent<DroneAISoccer_blue>();
+
+        if (is_goalie) { return; } //if you're the goalie, don't give yourself a new role
+        if ((forward_set == true)  && (midfield_set == true)) { return; } // if roles have been set by the other forward, don't give yourself a new role
+        foreach (GameObject friend in friends) // find the other forward and store it in forwardFriend
+        {
+            forwardFriend = friend.GetComponent<DroneAISoccer_blue>();
+            if ((friend.transform.position == transform.position) || (friend.GetComponent<DroneAISoccer_blue>().is_goalie==true))
+            { 
+                continue; 
+            }
+            else //check these two for switching roles
+            {
+                break;
+            }
+        }
+        if ((ball.transform.position - transform.position).magnitude < (ball.transform.position - forwardFriend.transform.position).magnitude)
+        {
+            is_forward = true;
+            is_midfield = false;
+            forward_set = true;
+            forwardFriend.is_midfield = true;
+            forwardFriend.is_forward = false;
+            midfield_set = true;
+        }
+        else
+        {
+            is_midfield = true;
+            is_forward = false;
+            midfield_set = true;
+            forwardFriend.is_forward = true;
+            forwardFriend.is_midfield = false;
+            forward_set = true;
+        }
     }
 
 
@@ -437,7 +470,8 @@ public class DroneAISoccer_blue : MonoBehaviour
     {
         myPandaBT.Reset();
         myPandaBT.Tick();
-        SetPosition(); // this currently only sets the position once. to set it more often, set the flags goalie_set, forward_set and midfield_set to false and it will review them. 
+        //SetPosition();
+        setNewRoles();
     }
 }
 

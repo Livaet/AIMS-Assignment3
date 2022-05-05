@@ -9,15 +9,13 @@ tree("playball")
 		sequence
 			IsForward
 			tree("Forward") 
-		sequence
-			IsMidfield
-			tree("Midfield")
+		tree("Midfield")
 			
 tree("Goalie")
 	fallback 
 		sequence	
 			not 
-				IsNearGoal 10.0
+				IsNearGoal 7.0
 			MoveToGoal 
 		sequence
 			IsBallCloserThan 5.0
@@ -32,16 +30,20 @@ tree("Forward")
 			GetBehindBall
 
 		sequence
-			IsBallCloserThan 15.0
+			IsBallCloserThan 10.0
 			IsBallCloseToGoal 40.0
 			Shoot
 		sequence
-			IsBallCloserThan 15.0
+			IsBallCloserThan 10.0
 			Dribble
 		Chase
 
 tree("Midfield")
 	fallback
+		sequence
+			not
+				IsBallBetweenUsAndGoal
+			GetBehindBall
 		sequence
 			IsBallCloserThan 5.0
 			Shoot
